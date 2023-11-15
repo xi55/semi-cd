@@ -28,6 +28,10 @@ model = dict(
         use_abs_pos_embed=False,
         drop_path_rate=0.3,
         patch_norm=True),
+    neck=dict(
+        type='NL_FPN',
+        in_dim=768,
+        reduction=True),
     decode_head=dict(
         type='SemiHead',
         in_channels=[96, 192, 384, 768], 
@@ -40,11 +44,11 @@ model = dict(
         in_index=[0, 1, 2, 3],
         channels=512,
         dropout_ratio=0.1,
-        num_classes=2,
+        num_classes=1,
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     auxiliary_head=None)
 
 vis_backends = [dict(type='CDLocalVisBackend')]
@@ -80,7 +84,7 @@ param_scheduler = [
         by_epoch=False,
     )
 ]
-
+custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
 train_dataloader = dict(batch_size=2)
 val_dataloader = dict(batch_size=1)

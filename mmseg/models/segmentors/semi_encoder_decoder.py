@@ -92,7 +92,7 @@ class SiamEncoderDecoder(BaseSegmentor):
             assert backbone.get('pretrained') is None, \
                 'both backbone and segmentor set pretrained weight'
             backbone.pretrained = pretrained
-        self.backbone = MODELS.build(backbone)
+        # self.backbone = MODELS.build(backbone)
         if neck is not None:
             self.neck = MODELS.build(neck)
         self._init_decode_head(decode_head)
@@ -162,11 +162,11 @@ class SiamEncoderDecoder(BaseSegmentor):
         return losses
     
     def _cd_decode_head_forward_train(self, inputs: List[Tensor],
-                                   data_samples: SampleList) -> dict:
+                                   pseudo_label, data_samples: SampleList) -> dict:
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
-        loss_cd = self.cd_decode_head.loss(inputs, data_samples,
+        loss_cd = self.cd_decode_head.loss(inputs, pseudo_label, data_samples,
                                             self.train_cfg)
 
         losses.update(add_prefix(loss_cd, 'cd_decode'))
@@ -486,7 +486,7 @@ class SiamEncoderDecoder(BaseSegmentor):
             - ``seg_logits``(PixelData): Predicted logits of semantic
                 segmentation before normalization.
         """
-        seg_logits_from, seg_logits_to, seg_logits_seg = seg_logits
+        seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd = seg_logits
         batch_size, C, H, W = seg_logits_seg.shape
 
         if data_samples is None:
@@ -515,6 +515,9 @@ class SiamEncoderDecoder(BaseSegmentor):
                 i_seg_to = seg_logits_to[i:i + 1, :,
                                           padding_top:H - padding_bottom,
                                           padding_left:W - padding_right]
+                i_seg_cd = seg_logits_cd[i:i + 1, :,
+                                          padding_top:H - padding_bottom,
+                                          padding_left:W - padding_right]
 
                 flip = img_meta.get('flip', None)
                 if flip:
@@ -524,14 +527,16 @@ class SiamEncoderDecoder(BaseSegmentor):
                         i_seg_logits = i_seg_logits.flip(dims=(3, ))
                         i_seg_from = i_seg_from.flip(dims=(3, ))
                         i_seg_to = i_seg_to.flip(dims=(3, ))
+                        i_seg_cd = i_seg_cd.flip(dims=(3, ))
                     else:
                         i_seg_logits = i_seg_logits.flip(dims=(2, ))
                         i_seg_from = i_seg_from.flip(dims=(2, ))
                         i_seg_to = i_seg_to.flip(dims=(2, ))
+                        i_seg_cd = i_seg_cd.flip(dims=(2, ))
 
                 # resize as original shape
                 res=[]
-                for i_seg in [i_seg_from, i_seg_to, i_seg_logits]:
+                for i_seg in [i_seg_from, i_seg_to, i_seg_logits, i_seg_cd]:
                     i_seg = resize(
                         i_seg,
                         size=img_meta['ori_shape'],
@@ -539,11 +544,12 @@ class SiamEncoderDecoder(BaseSegmentor):
                         align_corners=self.align_corners,
                         warning=False).squeeze(0)
                     res.append(i_seg)
-                i_seg_from, i_seg_to, i_seg_logits = res
+                i_seg_from, i_seg_to, i_seg_logits, i_seg_cd = res
             else:
                 i_seg_logits = seg_logits_seg[i]
                 i_seg_from = i_seg_from[i]
                 i_seg_to = i_seg_to[i]
+                i_seg_cd = i_seg_cd[i]
 
             if C > 1:
                 i_seg_pred = i_seg_logits.argmax(dim=0, keepdim=True)
@@ -553,6 +559,7 @@ class SiamEncoderDecoder(BaseSegmentor):
                 i_seg_logits = i_seg_logits.sigmoid()
                 i_seg_from = i_seg_from.sigmoid()
                 i_seg_to = i_seg_to.sigmoid()
+                
 
                 i_seg_pred = (i_seg_logits >
                               0.5).to(i_seg_logits)
@@ -561,8 +568,11 @@ class SiamEncoderDecoder(BaseSegmentor):
                 i_seg_to_pred = (i_seg_to >
                               0.5).to(i_seg_to)
 
+            i_seg_cd_pred = i_seg_cd.sigmoid()
 
-
+            i_seg_cd_pred[i_seg_cd_pred >= 0.5] = 1
+            i_seg_cd_pred[i_seg_cd_pred < 0.5] = 0
+ 
             data_samples[i].set_data({
                 'seg_logits':
                 PixelData(**{'data': i_seg_logits}),
@@ -571,7 +581,9 @@ class SiamEncoderDecoder(BaseSegmentor):
                 'i_seg_from_pred':
                 PixelData(**{'data': i_seg_from_pred}),
                 'i_seg_to_pred':
-                PixelData(**{'data': i_seg_to_pred})
+                PixelData(**{'data': i_seg_to_pred}),
+                'i_seg_cd_pred':
+                PixelData(**{'data': i_seg_cd_pred})
             })
 
         return data_samples

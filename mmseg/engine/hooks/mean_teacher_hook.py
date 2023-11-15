@@ -49,8 +49,11 @@ class MeanTeacherHook(Hook):
         model = runner.model
         if is_model_wrapper(model):
             model = model.module
-        assert hasattr(model, 'teacher')
-        assert hasattr(model, 'student')
+        # print(model)
+        assert hasattr(model, 'backbone_teacher')
+        assert hasattr(model, 'decode_student')
+        assert hasattr(model, 'backbone_student')
+        assert hasattr(model, 'decode_teacher')
         # only do it at initial stage
         if runner.iter == 0:
             self.momentum_update(model, 1)
@@ -73,14 +76,26 @@ class MeanTeacherHook(Hook):
         moving average."""
         if self.skip_buffers:
             for (src_name, src_parm), (dst_name, dst_parm) in zip(
-                    model.student.named_parameters(),
-                    model.teacher.named_parameters()):
+                    model.backbone_student.named_parameters(),
+                    model.backbone_teacher.named_parameters()):
+                dst_parm.data.mul_(1 - momentum).add_(
+                    src_parm.data, alpha=momentum)
+            for (src_name, src_parm), (dst_name, dst_parm) in zip(
+                    model.decode_student.named_parameters(),
+                    model.decode_teacher.named_parameters()):
                 dst_parm.data.mul_(1 - momentum).add_(
                     src_parm.data, alpha=momentum)
         else:
             for (src_parm,
-                 dst_parm) in zip(model.student.state_dict().values(),
-                                  model.teacher.state_dict().values()):
+                 dst_parm) in zip(model.backbone_student.state_dict().values(),
+                                  model.backbone_teacher.state_dict().values()):
+                # exclude num_tracking
+                if dst_parm.dtype.is_floating_point:
+                    dst_parm.data.mul_(1 - momentum).add_(
+                        src_parm.data, alpha=momentum)
+            for (src_parm,
+                 dst_parm) in zip(model.decode_student.state_dict().values(),
+                                  model.decode_teacher.state_dict().values()):
                 # exclude num_tracking
                 if dst_parm.dtype.is_floating_point:
                     dst_parm.data.mul_(1 - momentum).add_(

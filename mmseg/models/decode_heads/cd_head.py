@@ -201,7 +201,7 @@ class SSL_CD_Head(BaseDecodeHead):
         plt.show()
 
 
-    def loss(self, inputs: Tuple[Tensor], pseudo_label: Tensor,
+    def loss(self, inputs: Tuple[Tensor], pseudo_label: Tensor, data_samples: SampleList,
              train_cfg: ConfigType) -> dict:
         """Forward function for training.
 
@@ -216,11 +216,11 @@ class SSL_CD_Head(BaseDecodeHead):
             dict[str, Tensor]: a dictionary of loss components
         """
         seg_logits = self.forward(inputs)
-        losses = self.loss_by_feat(seg_logits, pseudo_label)
+        losses = self.loss_by_feat(seg_logits, pseudo_label, data_samples)
         return losses
 
     def loss_by_feat(self, seg_logits: Tensor,
-                     pseudo_label: Tensor) -> dict:
+                     pseudo_label: Tensor, data_samples: SampleList) -> dict:
 
         loss = dict()
 
@@ -238,16 +238,19 @@ class SSL_CD_Head(BaseDecodeHead):
             seg_weight = None
         pseudo_label = pseudo_label.squeeze(1)
 
-        # vis = seg_label[0]
-        # vis[vis == 255.0] == 9
-        # self.display1(vis, batch_data_samples[0].seg_map_path.split('\\')[-1])
-
+        # vis = pseudo_label[0]
+        # vis[vis == 255.0] == 2
+        # self.display1(vis, data_samples[0].seg_map_path.split('\\')[-1])
+        # print(seg_logits[0])
+        # print(pseudo_label[0])
+        # print(torch.unique(seg_logits))
+        # print(torch.unique(pseudo_label))
         loss['loss_cd_seg'] = self.loss_decode(
                     seg_logits,
                     pseudo_label.long(),
                     weight=seg_weight,
                     ignore_index=self.ignore_index)
-
+        # print(loss['loss_cd_seg'])
         # seg_label = seg_label.squeeze(1)
         loss['acc_seg'] = accuracy(
             seg_logits, pseudo_label, ignore_index=self.ignore_index)
