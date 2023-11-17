@@ -6,6 +6,7 @@ import torch
 from mmseg.registry import MODELS
 from ..utils import Upsample, resize
 from .decode_head import BaseDecodeHead
+from mmseg.models.losses import CrossEntropyLoss
 from mmseg.utils import ConfigType, SampleList
 from ..losses import accuracy
 from torch import Tensor
@@ -18,6 +19,8 @@ class SemiHead(BaseDecodeHead):
         super().__init__(input_transform='multiple_select', **kwargs)
         assert len(feature_strides) == len(self.in_channels)
         assert min(feature_strides) == feature_strides[0]
+
+        self.loss_stu_decode = CrossEntropyLoss(use_sigmoid=False, use_mask=False, class_weight=None, loss_name='loss_stu')
         self.feature_strides = feature_strides
 
         self.scale_heads = nn.ModuleList()
@@ -73,7 +76,6 @@ class SemiHead(BaseDecodeHead):
         # return [output1, output2]
         return output1
     
-
     def _stack_batch_gt(self, batch_data_samples: SampleList) -> Tensor:
         gt_semantic_segs = [
             data_sample.label_seg_map.data for data_sample in batch_data_samples
@@ -87,6 +89,84 @@ class SemiHead(BaseDecodeHead):
         plt.title(s)
         plt.colorbar()
         plt.show()
+
+    def loss(self, inputs: Tuple[Tensor], batch_data_samples: SampleList,
+             train_cfg: ConfigType) -> dict:
+        """Forward function for training.
+
+        Args:
+            inputs (Tuple[Tensor]): List of multi-level img features.
+            batch_data_samples (list[:obj:`SegDataSample`]): The seg
+                data samples. It usually includes information such
+                as `img_metas` or `gt_semantic_seg`.
+            train_cfg (dict): The training config.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
+        seg_logits = self.forward(inputs)
+        losses = self.loss_by_feat(seg_logits, batch_data_samples)
+        return losses
+
+    def loss_stu(self, stu_from: List[Tensor], stu_to: List[Tensor], pseudo_from, pseudo_to):
+        seg_from = self.forward(stu_from)
+        # print(len(stu_to))
+        seg_to = self.forward(stu_to)
+        loss = dict()
+
+        seg_from = resize(
+            input=seg_from,
+            size=pseudo_from.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        
+        seg_to = resize(
+            input=seg_to,
+            size=pseudo_to.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+
+        if self.sampler is not None:
+            from_weight = self.sampler.sample(seg_from, pseudo_from)
+            to_weight = self.sampler.sample(seg_to, pseudo_to)
+        else:
+            from_weight = None
+            c = None
+        pseudo_from = pseudo_from.squeeze(1)
+        pseudo_to = pseudo_to.squeeze(1)
+
+        # confidence_from = torch.softmax(seg_from, dim=1)
+        # confidence_to = torch.softmax(seg_to, dim=1)
+        
+        # thresh_from_mask = (torch.max(confidence_from, dim=1).values >= 0.75).int()
+        # thresh_to_mask = (torch.max(confidence_to, dim=1).values >= 0.75).int()
+        # print(torch.unique(torch.max(confidence_from, dim=1).values))
+        # print(thresh_from_mask)
+        # print(confidence_from, confidence_to)
+        # print(pseudo_from.shape)
+        # self.display1(pseudo_from[0].unsqueeze(0), 'A')
+        # self.display1(pseudo_from[1].unsqueeze(0), 'B')
+        loss_from_stu = self.loss_stu_decode(
+            seg_from,
+            pseudo_from,
+            weight=from_weight,
+            ignore_index=self.ignore_index)
+        
+        loss_to_std = self.loss_stu_decode(
+            seg_to,
+            pseudo_to,
+            weight=from_weight,
+            ignore_index=self.ignore_index)
+
+        # num_classes = seg_to.size()[1]
+
+
+        # loss_from_stu = torch.sum((pseudo_from - seg_from)**2) / num_classes
+        # loss_to_std = torch.sum((pseudo_to - seg_to)**2) / num_classes
+        loss['loss_stu'] = 0.3 * (loss_from_stu + loss_to_std)
+        # print(loss_from_stu, loss_to_std)
+        
+        return loss
 
     def loss_by_feat(self, seg_logits: Tensor,
                      batch_data_samples: SampleList) -> dict:

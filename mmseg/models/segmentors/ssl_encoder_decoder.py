@@ -55,8 +55,8 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
         feat_from = self.backbone_teacher(img_from)
         feat_to = self.backbone_teacher(img_to)
 
-        # stu_from = self.backbone_student(img_from)
-        # stu_to = self.backbone_student(img_to)
+        stu_from = self.backbone_student(img_from)
+        stu_to = self.backbone_student(img_to)
 
         feat_seg = self.backbone_student(img_seg)
 
@@ -65,17 +65,17 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
             feat_to[3] = self.neck(feat_to[3])
             # feat_seg[3] = self.neck(feat_seg[3])
 
-            # stu_from[3] = self.neck(stu_from[3])
-            # stu_to[3] = self.neck(stu_to[3])
+            stu_from[3] = self.neck(stu_from[3])
+            stu_to[3] = self.neck(stu_to[3])
 
         # x.append(x_seg)
-        return feat_from, feat_to, feat_seg
+        return feat_from, feat_to, feat_seg, stu_from, stu_to
     
     def encode_decode(self, inputs: Tensor,
                       batch_img_metas: List[dict]) -> Tensor:
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        feat_from, feat_to, feat_seg  = self.extract_feat(inputs)
+        feat_from, feat_to, feat_seg, _, _  = self.extract_feat(inputs)
         seg_logits_from = self.decode_teacher.predict(feat_from, batch_img_metas,
                                               self.test_cfg)
         
@@ -126,15 +126,16 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
             # _, _, img_seg = torch.split(inputs, self.backbone_inchannels, dim=1)
             # print()
             # self.display1(img_seg[0], data_samples[0].seg_map_path.split('\\')[-1])
-            feat_from, feat_to, feat_seg = self.extract_feat(inputs)
-            
+            feat_from, feat_to, feat_seg, stu_from, stu_to = self.extract_feat(inputs)
+            pseudo_label, pseudo_from, pseudo_to = self.get_pseudo(inputs, data_samples)
             # x.append(x_seg)
             # print(len(x))
             losses = dict()
-            loss_decode = self._decode_head_forward_train(feat_seg, data_samples)
+
+            loss_decode = self._decode_head_forward_train(feat_seg, stu_from, stu_to, pseudo_from, pseudo_to, data_samples)
             losses.update(loss_decode)
 
-            pseudo_label = self.get_pseudo(inputs, data_samples)
+            
 
             loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label, data_samples)
             losses.update(loss_cd_decode)
@@ -145,8 +146,11 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
 
             return losses
     
-
-    def _decode_head_forward_train(self, inputs: List[Tensor],
+    def _decode_head_forward_train(self, 
+                                   inputs: List[Tensor], 
+                                   stu_from: List[Tensor], 
+                                   stu_to: List[Tensor],
+                                   pseudo_from, pseudo_to,
                                    data_samples: SampleList) -> dict:
         """Run forward function and calculate loss for decode head in
         training."""
@@ -154,6 +158,8 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
         
         loss_decode = self.decode_student.loss(inputs, data_samples,
                                             self.train_cfg)
+        loss_stu = self.decode_student.loss_stu(stu_from, stu_to, pseudo_from, pseudo_to)
+        loss_decode.update(loss_stu)
 
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
@@ -166,9 +172,9 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
         # pseudo_label = torch.logical_xor(pseudo_from.int(), pseudo_to.int()).int() #t1，t2时序图异或得到变化伪标签
         pseudo_label = torch.tensor((pseudo_from != pseudo_to), dtype=torch.int32, device='cuda:0', requires_grad=False)
         # self.display1(pseudo_from[0], data_samples[0].seg_map_path.split('\\')[-1])
+        # self.display1(pseudo_to[0], data_samples[0].seg_map_path.split('\\')[-1])
         # self.display1(pseudo_label[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # self.display1(pseudo_pred[0].i_seg_cd_pred.data, data_samples[0].seg_map_path.split('\\')[-1])
         # print('pseudo_pred: ')
         # print(pseudo_pred[0].i_seg_cd_pred.data)
-        return pseudo_label
+        return pseudo_label, pseudo_from, pseudo_to
 

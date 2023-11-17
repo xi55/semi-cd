@@ -37,7 +37,9 @@ model = dict(
         in_channels=[96, 192, 384, 768], 
         feature_strides=[4, 8, 16, 32],
         num_classes=9, 
-        ignore_index = 255),
+        ignore_index = 255,
+        loss_decode=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     cd_decode_head=dict(
         type='SSL_CD_Head',
         in_channels=[768, 384, 192, 96],
