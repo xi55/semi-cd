@@ -2,6 +2,12 @@
 from mmengine.utils import is_str
 
 
+def GD2_classes():
+    return ['none', 'tree', 'clearing', 'road', 'car']
+
+def GD2_palette():
+    return [[0, 0, 0], [0, 255, 0], [0, 0, 255], [143, 112, 0], [255, 0, 0]]
+
 def mydata_classes():
     return ['BackGround', 'Water', 'Transport', 'Building', 'Arableland', 'Grassland', 'Woodland', 'land', 'other']
 

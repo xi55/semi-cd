@@ -9,7 +9,8 @@ from .class_names import (ade_classes, ade_palette, bdd100k_classes,
                           potsdam_palette, stare_classes, stare_palette,
                           synapse_classes, synapse_palette, vaihingen_classes,
                           vaihingen_palette, voc_classes, voc_palette,
-                          mydata_classes, mydata_palette, my_seg_data_classes, my_seg_data_palette)
+                          mydata_classes, mydata_palette, my_seg_data_classes, my_seg_data_palette,
+                          GD2_classes, GD2_palette)
 # yapf: enable
 from .collect_env import collect_env
 from .get_templates import get_predefined_templates
@@ -71,5 +72,6 @@ __all__ = [
     'mydata_classes', 
     'mydata_palette', 
     'my_seg_data_classes', 
-    'my_seg_data_palette'
+    'my_seg_data_palette', 
+    'GD2_classes', 'GD2_palette'
 ]

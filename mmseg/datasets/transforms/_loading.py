@@ -218,9 +218,9 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         
         results['gt_seg_map'] = gt_semantic_seg
         results['seg_fields'].append('gt_seg_map')
-
-        results['label_seg_map'] = label_semantic_seg
-        results['seg_fields'].append('label_seg_map')
+        if 'img_seg_label' in results.keys():
+            results['label_seg_map'] = label_semantic_seg
+            results['seg_fields'].append('label_seg_map')
         
 
     def __repr__(self) -> str:
