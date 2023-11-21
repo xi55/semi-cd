@@ -104,7 +104,7 @@ class SoftTeacher(SemiBaseDetector):
         #     x, rpn_results_list, batch_data_samples, rescale=False)
 
         for data_samples, results in zip(batch_data_samples, x):
-            data_samples.gt_instances = results
+            data_samples.gt_instances = results.pred_sem_seg
 
         # batch_data_samples = filter_gt_instances(
         #     batch_data_samples,
