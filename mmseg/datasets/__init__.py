@@ -7,7 +7,7 @@ from .chase_db1 import ChaseDB1Dataset
 from .cityscapes import CityscapesDataset
 from .coco_stuff import COCOStuffDataset
 from .dark_zurich import DarkZurichDataset
-from .dataset_wrappers import MultiImageMixDataset
+from .dataset_wrappers import MultiImageMixDataset, ConcatDataset
 from .decathlon import DecathlonDataset
 from .drive import DRIVEDataset
 from .dsdl import DSDLSegDataset
@@ -27,6 +27,8 @@ from .stare import STAREDataset
 from .synapse import SynapseDataset
 from .mydata import MyDataset
 from .my_seg_data import my_seg_Dataset
+from .GD2 import GD2
+from .levir_cd import LEVIR_CD_Dataset
 # yapf: disable
 from .transforms import (CLAHE, AdjustGamma, Albu, BioMedical3DPad,
                          BioMedical3DRandomCrop, BioMedical3DRandomFlip,
@@ -62,5 +64,6 @@ __all__ = [
     'MapillaryDataset_v2', 'Albu', 'LEVIRCDDataset',
     'LoadMultipleRSImageFromFile', 'LoadSingleRSImageFromFile',
     'ConcatCDInput', 'BaseCDDataset', 'DSDLSegDataset', 'BDD100KDataset',
-    'NYUDataset', 'MyDataset', 'my_seg_Dataset'
+    'NYUDataset', 'MyDataset', 'my_seg_Dataset', 'GD2', 'LEVIR_CD_Dataset',
+    'ConcatDataset'
 ]

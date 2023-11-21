@@ -4,9 +4,10 @@ from .optimizers import (ForceDefaultOptimWrapperConstructor,
                          LayerDecayOptimizerConstructor,
                          LearningRateDecayOptimizerConstructor)
 from .schedulers import PolyLRRatio
+from .runner import TeacherStudentValLoop
 
 __all__ = [
     'LearningRateDecayOptimizerConstructor', 'LayerDecayOptimizerConstructor',
     'SegVisualizationHook', 'PolyLRRatio',
-    'ForceDefaultOptimWrapperConstructor'
+    'ForceDefaultOptimWrapperConstructor', 'TeacherStudentValLoop'
 ]

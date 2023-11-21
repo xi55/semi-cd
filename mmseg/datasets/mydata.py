@@ -1,10 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmseg.registry import DATASETS
 from .basesegdataset import BaseSegDataset
+from .basesemidataset import BaseSemiDataset
 
 
 @DATASETS.register_module()
-class MyDataset(BaseSegDataset):
+class MyDataset(BaseSemiDataset):
     METAINFO = dict(
         classes=('BackGround', 'Water', 'Transport', 'Building', 'Arableland', 'Grassland', 'Woodland', 'land', 'other'),
         palette=[[0, 0, 0], [0, 0, 255], [211, 211, 211], [255, 0, 0], [255, 255, 0], [0, 255, 0], [34, 139, 34], [139, 117, 0], [255, 255, 255]])

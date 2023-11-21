@@ -37,6 +37,8 @@ from .uper_head import UPerHead
 from .vpd_depth_head import VPDDepthHead
 from .semi_head import SemiHead
 from .cd_head import SSL_CD_Head
+from .ad_head import ADHead
+from .changer import Changer
 
 __all__ = [
     'FCNHead', 'PSPHead', 'ASPPHead', 'PSAHead', 'NLHead', 'GCHead', 'CCHead',
@@ -47,5 +49,5 @@ __all__ = [
     'SegformerHead', 'ISAHead', 'STDCHead', 'IterativeDecodeHead',
     'KernelUpdateHead', 'KernelUpdator', 'MaskFormerHead', 'Mask2FormerHead',
     'LightHamHead', 'PIDHead', 'DDRHead', 'VPDDepthHead', 'SideAdapterCLIPHead',
-    'SemiHead', 'SSL_CD_Head'
+    'SemiHead', 'SSL_CD_Head', 'ADHead', 'Changer'
 ]

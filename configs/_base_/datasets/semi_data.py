@@ -37,7 +37,7 @@ geometric = [
     [dict(type='TranslateY')],
 ]
 
-scale = [(512, 512)]
+scale = (512, 512)
 
 branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 # pipeline used to augment labeled data,
@@ -45,23 +45,23 @@ branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 sup_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', reduce_zero_label=False),
-    dict(type='RandomResize', scale=scale, keep_ratio=True),
+    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='RandAugment', aug_space=color_space, aug_num=1),
     # dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
         type='MultiBranch',
         branch_field=branch_field,
-        sup=dict(type='PackSemiInputs'))
+        sup=dict(type='PackSegInputs'))
 ]
 
 # pipeline used to augment unlabeled data weakly,
 # which will be sent to teacher model for predicting pseudo instances.
 weak_pipeline = [
-    dict(type='RandomResize', scale=scale, keep_ratio=True),
+    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
-        type='PackSemiInputs',
+        type='PackSegInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction',
                    'homography_matrix')),
@@ -70,7 +70,7 @@ weak_pipeline = [
 # pipeline used to augment unlabeled data strongly,
 # which will be sent to student model for unsupervised training.
 strong_pipeline = [
-    dict(type='RandomResize', scale=scale, keep_ratio=True),
+    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomOrder',
@@ -78,10 +78,10 @@ strong_pipeline = [
             dict(type='RandAugment', aug_space=color_space, aug_num=1),
             dict(type='RandAugment', aug_space=geometric, aug_num=1),
         ]),
-    dict(type='RandomErasing', n_patches=(1, 5), ratio=(0, 0.2)),
+    # dict(type='mmdet.RandomErasing', n_patches=(1, 5), ratio=(0, 0.2)),
     # dict(type='mmdet.FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
-        type='PackSemiInputs',
+        type='PackSegInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction',
                    'homography_matrix')),
@@ -103,13 +103,13 @@ test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(512, 512), keep_ratio=True),
     dict(
-        type='PackSemiInputs',
+        type='PackSegInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor'))
 ]
 
-batch_size = 5
-num_workers = 5
+batch_size = 4
+num_workers = 4
 # There are two common semi-supervised learning settings on the coco dataset：
 # (1) Divide the train2017 into labeled and unlabeled datasets
 # by a fixed percentage, such as 1%, 2%, 5% and 10%.
@@ -126,18 +126,17 @@ num_workers = 5
 labeled_dataset = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='annotations/instances.json',
-    data_prefix=dict(img='train2017/'),
-    filter_cfg=dict(filter_empty_gt=True, min_size=32),
+    data_prefix=dict(
+        img_seg='seg/train/seg_imgs',
+        img_seg_label='seg/train/seg_labels'
+        ),
     pipeline=sup_pipeline,
     backend_args=backend_args)
 
 unlabeled_dataset = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='annotations/instances_unlabeled.json',
-    data_prefix=dict(img='unlabeled2017/'),
-    filter_cfg=dict(filter_empty_gt=False),
+    data_prefix=dict(img_seg='train/A'),
     pipeline=unsup_pipeline,
     backend_args=backend_args)
 
@@ -146,9 +145,9 @@ train_dataloader = dict(
     num_workers=num_workers,
     persistent_workers=True,
     sampler=dict(
-        type='GroupMultiSourceSampler',
+        type='MultiSourceSampler',
         batch_size=batch_size,
-        source_ratio=[1, 4]),
+        source_ratio=[1, 3]),
     dataset=dict(
         type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 
@@ -161,18 +160,15 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/instances_val2017.json',
-        data_prefix=dict(img='val2017/'),
+        data_prefix=dict(
+            img_seg='seg/train/seg_imgs',
+            img_seg_label='seg/train/seg_labels'
+            ),
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args))
 
 test_dataloader = val_dataloader
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
-    metric='bbox',
-    format_only=False,
-    backend_args=backend_args)
+val_evaluator = dict(type='IoUMetric', iou_metrics=['mFscore', 'mIoU'])
 test_evaluator = val_evaluator

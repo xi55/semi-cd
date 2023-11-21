@@ -75,16 +75,23 @@ class SemiBaseDetector(BaseSegmentor):
             dict: A dictionary of loss components
         """
         losses = dict()
+        # print(multi_batch_data_samples['sup'].shape)
         losses.update(**self.loss_by_gt_instances(
             multi_batch_inputs['sup'], multi_batch_data_samples['sup']))
 
         origin_pseudo_data_samples, batch_info = self.get_pseudo_instances(
             multi_batch_inputs['unsup_teacher'],
             multi_batch_data_samples['unsup_teacher'])
+        
+        # print(torch.unique(origin_pseudo_data_samples[0].gt_sem_seg.data))
+        # print(batch_info.keys())
+        # print(torch.unique(batch_info['feat'][0].pred_sem_seg.data))
+
         multi_batch_data_samples[
             'unsup_student'] = self.project_pseudo_instances(
                 origin_pseudo_data_samples,
                 multi_batch_data_samples['unsup_student'])
+        
         losses.update(**self.loss_by_pseudo_instances(
             multi_batch_inputs['unsup_student'],
             multi_batch_data_samples['unsup_student'], batch_info))
@@ -122,7 +129,6 @@ class SemiBaseDetector(BaseSegmentor):
         Returns:
             dict: A dictionary of loss components
         """
-
         losses = self.student.loss(batch_inputs, batch_data_samples)
         sup_weight = self.semi_train_cfg.get('sup_weight', 1.)
         return rename_loss_dict('sup_', reweight_loss_dict(losses, sup_weight))
@@ -147,8 +153,7 @@ class SemiBaseDetector(BaseSegmentor):
         Returns:
             dict: A dictionary of loss components
         """
-        batch_data_samples = filter_gt_instances(
-            batch_data_samples, score_thr=self.semi_train_cfg.cls_pseudo_thr)
+        
         losses = self.student.loss(batch_inputs, batch_data_samples)
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
@@ -167,6 +172,7 @@ class SemiBaseDetector(BaseSegmentor):
         self.teacher.eval()
         results_list = self.teacher.predict(
             batch_inputs, batch_data_samples, rescale=False)
+        print(batch_data_samples)
         batch_info = {}
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = results.pred_instances
@@ -183,12 +189,8 @@ class SemiBaseDetector(BaseSegmentor):
                                                   batch_data_samples):
             data_samples.gt_instances = copy.deepcopy(
                 pseudo_instances.gt_instances)
-            data_samples.gt_instances.bboxes = bbox_project(
-                data_samples.gt_instances.bboxes,
-                torch.tensor(data_samples.homography_matrix).to(
-                    self.data_preprocessor.device), data_samples.img_shape)
-        wh_thr = self.semi_train_cfg.get('min_pseudo_bbox_wh', (1e-2, 1e-2))
-        return filter_gt_instances(batch_data_samples, wh_thr=wh_thr)
+            
+        return batch_data_samples
 
     def predict(self, batch_inputs: Tensor,
                 batch_data_samples: SampleList) -> SampleList:

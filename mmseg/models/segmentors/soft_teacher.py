@@ -70,9 +70,9 @@ class SoftTeacher(SemiBaseDetector):
         """
 
         x = self.student.extract_feat(batch_inputs)
-
+        print(torch.unique(batch_data_samples[0].gt_sem_seg.data))
         losses = {}
-        rpn_losses, rpn_results_list = self.rpn_loss_by_pseudo_instances(
+        rpn_losses, rpn_results_list = self.student._decode_head_forward_train(
             x, batch_data_samples)
         losses.update(**rpn_losses)
         losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
@@ -88,37 +88,37 @@ class SoftTeacher(SemiBaseDetector):
             self, batch_inputs: Tensor, batch_data_samples: SampleList
     ) -> Tuple[SampleList, Optional[dict]]:
         """Get pseudo instances from teacher model."""
-        assert self.teacher.with_bbox, 'Bbox head must be implemented.'
-        x = self.teacher.extract_feat(batch_inputs)
 
+        x = self.teacher.predict(batch_inputs)
+        # print(batch_data_samples[0])
         # If there are no pre-defined proposals, use RPN to get proposals
-        if batch_data_samples[0].get('proposals', None) is None:
-            rpn_results_list = self.teacher.rpn_head.predict(
-                x, batch_data_samples, rescale=False)
-        else:
-            rpn_results_list = [
-                data_sample.proposals for data_sample in batch_data_samples
-            ]
+        # if batch_data_samples[0].get('proposals', None) is None:
+        #     rpn_results_list = self.teacher.rpn_head.predict(
+        #         x, batch_data_samples, rescale=False)
+        # else:
+        #     rpn_results_list = [
+        #         data_sample.proposals for data_sample in batch_data_samples
+        #     ]
 
-        results_list = self.teacher.roi_head.predict(
-            x, rpn_results_list, batch_data_samples, rescale=False)
+        # results_list = self.teacher.roi_head.predict(
+        #     x, rpn_results_list, batch_data_samples, rescale=False)
 
-        for data_samples, results in zip(batch_data_samples, results_list):
+        for data_samples, results in zip(batch_data_samples, x):
             data_samples.gt_instances = results
 
-        batch_data_samples = filter_gt_instances(
-            batch_data_samples,
-            score_thr=self.semi_train_cfg.pseudo_label_initial_score_thr)
+        # batch_data_samples = filter_gt_instances(
+        #     batch_data_samples,
+        #     score_thr=self.semi_train_cfg.pseudo_label_initial_score_thr)
 
-        reg_uncs_list = self.compute_uncertainty_with_aug(
-            x, batch_data_samples)
+        # reg_uncs_list = self.compute_uncertainty_with_aug(
+        #     x, batch_data_samples)
 
-        for data_samples, reg_uncs in zip(batch_data_samples, reg_uncs_list):
-            data_samples.gt_instances['reg_uncs'] = reg_uncs
-            data_samples.gt_instances.bboxes = bbox_project(
-                data_samples.gt_instances.bboxes,
-                torch.from_numpy(data_samples.homography_matrix).inverse().to(
-                    self.data_preprocessor.device), data_samples.ori_shape)
+        # for data_samples, reg_uncs in zip(batch_data_samples, reg_uncs_list):
+        #     data_samples.gt_instances['reg_uncs'] = reg_uncs
+        #     data_samples.gt_instances.bboxes = bbox_project(
+        #         data_samples.gt_instances.bboxes,
+        #         torch.from_numpy(data_samples.homography_matrix).inverse().to(
+        #             self.data_preprocessor.device), data_samples.ori_shape)
 
         batch_info = {
             'feat': x,
@@ -128,9 +128,9 @@ class SoftTeacher(SemiBaseDetector):
         }
         for data_samples in batch_data_samples:
             batch_info['img_shape'].append(data_samples.img_shape)
-            batch_info['homography_matrix'].append(
-                torch.from_numpy(data_samples.homography_matrix).to(
-                    self.data_preprocessor.device))
+            # batch_info['homography_matrix'].append(
+            #     torch.from_numpy(data_samples.homography_matrix).to(
+            #         self.data_preprocessor.device))
             batch_info['metainfo'].append(data_samples.metainfo)
         return batch_data_samples, batch_info
 

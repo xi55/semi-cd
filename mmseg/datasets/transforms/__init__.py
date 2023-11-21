@@ -5,7 +5,7 @@ from .loading import (LoadAnnotations, LoadBiomedicalAnnotation,
                       LoadDepthAnnotation, LoadImageFromNDArray,
                       LoadMultipleRSImageFromFile, LoadSingleRSImageFromFile)
 from ._loading import (MultiImgLoadAnnotations, MultiImgLoadImageFromFile,
-                      MultiImgLoadInferencerLoader,
+                      MultiImgLoadInferencerLoader,LoadEmptyAnnotations,
                       MultiImgLoadLoadImageFromNDArray)
 # yapf: disable
 from .transforms import (CLAHE, AdjustGamma, Albu, BioMedical3DPad,

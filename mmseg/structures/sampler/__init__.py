@@ -2,5 +2,7 @@
 from .base_pixel_sampler import BasePixelSampler
 from .builder import build_pixel_sampler
 from .ohem_pixel_sampler import OHEMPixelSampler
+from .multi_source_sampler import GroupMultiSourceSampler, MultiSourceSampler
 
-__all__ = ['build_pixel_sampler', 'BasePixelSampler', 'OHEMPixelSampler']
+__all__ = ['build_pixel_sampler', 'BasePixelSampler', 'OHEMPixelSampler',
+           'GroupMultiSourceSampler', 'MultiSourceSampler']
