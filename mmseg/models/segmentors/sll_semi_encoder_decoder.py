@@ -93,8 +93,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 'both backbone and segmentor set pretrained weight'
             backbone.pretrained = pretrained
         # self.backbone = MODELS.build(backbone)
-        if neck is not None:
-            self.neck = MODELS.build(neck)
+        self._init_neck(neck)
         self._init_decode_head(decode_head)
         self._init_cd_decode_head(cd_decode_head)
         self._init_auxiliary_head(auxiliary_head)
@@ -115,6 +114,10 @@ class SllSemiEncoderDecoder(BaseSegmentor):
     def _init_cd_decode_head(self, cd_decode_head:ConfigType) -> None:
         if cd_decode_head is not None:
             self.cd_decode_head = MODELS.build(cd_decode_head)
+
+    def _init_neck(self, neck: ConfigType):
+        if neck is not None:
+            self.neck = MODELS.build(neck)
 
     def _init_auxiliary_head(self, auxiliary_head: ConfigType) -> None:
         """Initialize ``auxiliary_head``"""

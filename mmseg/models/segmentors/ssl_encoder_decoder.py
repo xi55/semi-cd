@@ -5,11 +5,11 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 from mmseg.registry import MODELS
-from .semi_encoder_decoder import SiamEncoderDecoder
+from .sll_semi_encoder_decoder import SllSemiEncoderDecoder
 import matplotlib.pyplot as plt
 
 @MODELS.register_module()
-class SLLEncoderDecoder(SiamEncoderDecoder):
+class SLLEncoderDecoder(SllSemiEncoderDecoder):
     """Dual Input Encoder Decoder segmentors.
 
     DIEncoderDecoder typically consists of backbone, decode_head, auxiliary_head.
@@ -43,7 +43,14 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
         self.num_classes = self.decode_student.num_classes
         self.out_channels = self.decode_student.out_channels
         self.freeze(self.decode_teacher)
-    
+
+    def _init_neck(self, neck: ConfigType):
+        if neck is not None:
+            self.neck_student = MODELS.build(neck)
+            self.neck_teacher = MODELS.build(neck)
+            self.freeze(self.neck_teacher)
+
+
     def extract_feat(self, inputs) -> List[Tensor]:
         """Extract features from images."""
         # `in_channels` is not in the ATTRIBUTE for some backbone CLASS.
@@ -58,15 +65,23 @@ class SLLEncoderDecoder(SiamEncoderDecoder):
         stu_from = self.backbone_student(img_from)
         stu_to = self.backbone_student(img_to)
 
+
         feat_seg = self.backbone_student(img_seg)
 
         if self.with_neck:
-            feat_from[3] = self.neck(feat_from[3])
-            feat_to[3] = self.neck(feat_to[3])
+            if isinstance(feat_from, tuple):
+                feat_from = list(feat_from)
+                feat_to = list(feat_to)
+                stu_from = list(stu_from)
+                stu_to = list(stu_to)
+                feat_seg = list(feat_seg)
+
+            feat_from[3] = self.neck_teacher(feat_from[3])
+            feat_to[3] = self.neck_teacher(feat_to[3])
             # feat_seg[3] = self.neck(feat_seg[3])
 
-            stu_from[3] = self.neck(stu_from[3])
-            stu_to[3] = self.neck(stu_to[3])
+            stu_from[3] = self.neck_student(stu_from[3])
+            stu_to[3] = self.neck_student(stu_to[3])
 
         # x.append(x_seg)
         return feat_from, feat_to, feat_seg, stu_from, stu_to

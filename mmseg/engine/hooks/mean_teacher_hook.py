@@ -80,6 +80,13 @@ class MeanTeacherHook(Hook):
                     model.backbone_teacher.named_parameters()):
                 dst_parm.data.mul_(1 - momentum).add_(
                     src_parm.data, alpha=momentum)
+
+            for (src_name, src_parm), (dst_name, dst_parm) in zip(
+                    model.neck_student.named_parameters(),
+                    model.neck_teacher.named_parameters()):
+                dst_parm.data.mul_(1 - momentum).add_(
+                    src_parm.data, alpha=momentum)    
+            
             for (src_name, src_parm), (dst_name, dst_parm) in zip(
                     model.decode_student.named_parameters(),
                     model.decode_teacher.named_parameters()):
@@ -93,6 +100,15 @@ class MeanTeacherHook(Hook):
                 if dst_parm.dtype.is_floating_point:
                     dst_parm.data.mul_(1 - momentum).add_(
                         src_parm.data, alpha=momentum)
+                    
+            for (src_parm,
+                 dst_parm) in zip(model.neck_student.state_dict().values(),
+                                  model.neck_teacher.state_dict().values()):
+                # exclude num_tracking
+                if dst_parm.dtype.is_floating_point:
+                    dst_parm.data.mul_(1 - momentum).add_(
+                        src_parm.data, alpha=momentum)
+            
             for (src_parm,
                  dst_parm) in zip(model.decode_student.state_dict().values(),
                                   model.decode_teacher.state_dict().values()):

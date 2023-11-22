@@ -149,13 +149,13 @@ class SemiHead(BaseDecodeHead):
         loss_from_stu = self.loss_stu_decode(
             seg_from,
             pseudo_from,
-            weight=thresh_from_mask,
+            weight=from_weight,
             ignore_index=self.ignore_index)
         
         loss_to_std = self.loss_stu_decode(
             seg_to,
             pseudo_to,
-            weight=thresh_to_mask,
+            weight=to_weight,
             ignore_index=self.ignore_index)
 
         # num_classes = seg_to.size()[1]

@@ -401,7 +401,9 @@ class MultiImgRandomRotate(BaseTransform):
         Returns:
             dict: Rotated results.
         """
-
+        print(results['img'][0].shape)
+        print(results['img'][1].shape)
+        print(results['img_seg'].shape)
         rotate, degree = self.generate_degree()
         if rotate:
             # rotate image
