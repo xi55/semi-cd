@@ -1,5 +1,5 @@
 dataset_type = 'my_seg_Dataset'
-data_root = 'E:/changeDectect/train_with_seg/'
+data_root = '/root/autodl-tmp/data'
 
 crop_size = (512, 512)
 train_pipeline = [
@@ -9,12 +9,12 @@ train_pipeline = [
     dict(type='MultiImgRandomFlip', prob=0.5, direction='horizontal'),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='vertical'),
     # dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
-    dict(
-        type='MultiImgRandomResize',
-        scale=(512, 512),
-        ratio_range=(0.5, 2.0),
-        keep_ratio=True
-    ),
+    # dict(
+    #     type='MultiImgRandomResize',
+    #     scale=(512, 512),
+    #     ratio_range=(0.5, 1.5),
+    #     keep_ratio=True
+    # ),
     # dict(type='MultiImgExchangeTime', prob=0.5),
     # dict(type='MultiImgPhotoMetricDistortion'),
     dict(type='MultiImgPackSegInputs')
@@ -46,7 +46,7 @@ tta_pipeline = [
         ])
 ]
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=8,
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='InfiniteSampler', shuffle=True),

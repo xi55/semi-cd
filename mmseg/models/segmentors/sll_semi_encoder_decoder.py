@@ -472,7 +472,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
     
 
     def ssl_postprocess_result(self,
-                           seg_logits: list[Tensor],
+                           seg_logits: List[Tensor],
                            data_samples: OptSampleList = None) -> SampleList:
         """ Convert results list to `SegDataSample`.
         Args:

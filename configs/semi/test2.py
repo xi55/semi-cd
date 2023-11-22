@@ -15,7 +15,7 @@ data_preprocessor = dict(
     seg_pad_val=255,
     test_cfg=dict(size_divisor=32))
 norm_cfg = dict(type='BN', requires_grad=True)
-checkpoint_file = 'D:/git/mmseg/mmsegmentation/logs/test/4/iter_160000.pth'
+checkpoint_file = '/root/autodl-tmp/pretrain/iter_160000.pth'
 model = dict(
     type='SLLEncoderDecoder',
     data_preprocessor=data_preprocessor,
@@ -88,6 +88,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=2)
+train_dataloader = dict(batch_size=4)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader
