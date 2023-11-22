@@ -45,8 +45,8 @@ class MultiImgPackSegInputs(BaseTransform):
     def __init__(self,
                  meta_keys=('img_path', 'seg_map_path', 'seg_map_path_from', 
                             'seg_map_path_to', 'img_seg', 'img_seg_label', 'ori_shape','img_shape', 
-                            'pad_shape', 'scale_factor', 'flip',
-                            'flip_direction')):
+                            'pad_shape', 'scale_factor', 'flip', 'flip_direction', 'scale', 'keep_ratio'
+                            )):
         self.meta_keys = meta_keys
 
     def transform(self, results: dict) -> dict:

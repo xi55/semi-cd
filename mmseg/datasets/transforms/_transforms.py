@@ -321,10 +321,9 @@ class MultiImgRandomCrop(BaseTransform):
         """
 
         crop_bbox = self.crop_bbox(results)
-
         # crop the image
         imgs = [self.crop(img, crop_bbox) for img in results['img']]
-
+        results['img_seg'] = self.crop(results['img_seg'], crop_bbox)
         # crop semantic seg
         for key in results.get('seg_fields', []):
             results[key] = self.crop(results[key], crop_bbox)
@@ -401,12 +400,13 @@ class MultiImgRandomRotate(BaseTransform):
         Returns:
             dict: Rotated results.
         """
-        print(results['img'][0].shape)
-        print(results['img'][1].shape)
-        print(results['img_seg'].shape)
+        # print(results)
+        # print(results['img'][0].shape)
+        # print(results['img'][1].shape)
+        # print(results['img_seg'].shape)
         rotate, degree = self.generate_degree()
         if rotate:
-            # rotate image
+            # region weak aug
             results['img'] = [
                 mmcv.imrotate(
                     img,
@@ -414,6 +414,14 @@ class MultiImgRandomRotate(BaseTransform):
                     border_value=self.pal_val,
                     center=self.center,
                     auto_bound=self.auto_bound) for img in results['img']]
+            
+            results['img_seg'] = mmcv.imrotate(
+                    results['img_seg'],
+                    angle=degree,
+                    border_value=self.pal_val,
+                    center=self.center,
+                    auto_bound=self.auto_bound)
+            #endregion    
 
             # rotate segs
             for key in results.get('seg_fields', []):
@@ -1171,7 +1179,24 @@ class MultiImgResize(BaseTransform):
                         return_scale=True,
                         backend=self.backend)
                 res_imgs.append(img)
+
+            if results.get('img_seg', None) is not None:
+                if self.keep_ratio:
+                    img_seg, scale_factor = mmcv.imrescale(
+                        results['img_seg'],
+                        results['scale'],
+                        interpolation=self.interpolation,
+                        return_scale=True,
+                        backend=self.backend)
+                else:
+                    img_seg = mmcv.imresize(
+                        results['img_seg'], 
+                        results['scale'], 
+                        interpolation=self.interpolation,
+                        return_scale=True,
+                        backend=self.backend)
             results['img'] = res_imgs
+            results['img_seg'] = img_seg
             results['img_shape'] = res_imgs[0].shape[:2]
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
@@ -1182,13 +1207,13 @@ class MultiImgResize(BaseTransform):
             if self.keep_ratio:
                 gt_seg = mmcv.imrescale(
                     results[key], 
-                    results['scale'], 
+                    (512, 512), 
                     interpolation='nearest', 
                     backend=self.backend)
             else:
                 gt_seg = mmcv.imresize(
                     results[key], 
-                    results['scale'], 
+                    (512, 512), 
                     interpolation='nearest',
                     backend=self.backend)
             results[key] = gt_seg
@@ -1374,8 +1399,10 @@ class MultiImgRandomResize(BaseTransform):
             ``keep_ratio`` keys are updated in result dict.
         """
         results['scale'] = self._random_scale()
+        
         self.resize.scale = results['scale']
         results = self.resize(results)
+        # print(results.keys())
         return results
 
     def __repr__(self) -> str:
@@ -1570,7 +1597,8 @@ class MultiImgRandomFlip(BaseTransform):
                 mmcv.imflip(img, direction=results['flip_direction'])
                 for img in results['img']
             ]
-
+            results['img_seg'] = mmcv.imflip(
+                    results['img_seg'], direction=results['flip_direction']).copy()
             # flip segs
             for key in results.get('seg_fields', []):
                 # use copy() to make numpy stride positive
