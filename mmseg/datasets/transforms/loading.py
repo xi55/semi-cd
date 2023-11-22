@@ -101,7 +101,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='unchanged',
             backend=self.imdecode_backend).squeeze().astype(np.uint8)
-
+        # print(gt_semantic_seg.shape)
+        # print('-' * 10)
         # reduce zero_label
         if self.reduce_zero_label is None:
             self.reduce_zero_label = results['reduce_zero_label']

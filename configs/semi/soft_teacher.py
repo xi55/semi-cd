@@ -63,7 +63,7 @@ model = dict(
 
 # training schedule for 180k
 train_cfg = dict(
-    type='IterBasedTrainLoop', max_iters=180000, val_interval=1000)
+    type='IterBasedTrainLoop', max_iters=180000, val_interval=180000)
 val_cfg = dict(type='TeacherStudentValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -86,8 +86,9 @@ optim_wrapper = dict(
     optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))
 
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=1000),
-    logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=False))
+    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=4000),
+    logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=False),
+    visualization=dict(type='SegVisualizationHook', interval=1))
 # log_processor = dict(by_epoch=False)
 
 custom_hooks = [dict(type='MeanTeacherHook')]

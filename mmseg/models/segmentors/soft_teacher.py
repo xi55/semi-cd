@@ -68,17 +68,16 @@ class SoftTeacher(SemiBaseDetector):
         Returns:
             dict: A dictionary of loss components
         """
-
+        
         x = self.student.extract_feat(batch_inputs)
-        print(torch.unique(batch_data_samples[0].gt_sem_seg.data))
         losses = {}
-        rpn_losses, rpn_results_list = self.student._decode_head_forward_train(
+        rpn_losses = self.student._decode_head_forward_train(
             x, batch_data_samples)
         losses.update(**rpn_losses)
-        losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
-            x, rpn_results_list, batch_data_samples, batch_info))
-        losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
-            x, rpn_results_list, batch_data_samples))
+        # losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
+        #     x, rpn_results_list, batch_data_samples, batch_info))
+        # losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
+        #     x, rpn_results_list, batch_data_samples))
         unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
         return rename_loss_dict('unsup_',
                                 reweight_loss_dict(losses, unsup_weight))
@@ -88,7 +87,7 @@ class SoftTeacher(SemiBaseDetector):
             self, batch_inputs: Tensor, batch_data_samples: SampleList
     ) -> Tuple[SampleList, Optional[dict]]:
         """Get pseudo instances from teacher model."""
-
+        # print(batch_inputs.shape)
         x = self.teacher.predict(batch_inputs)
         # print(batch_data_samples[0])
         # If there are no pre-defined proposals, use RPN to get proposals
@@ -102,7 +101,7 @@ class SoftTeacher(SemiBaseDetector):
 
         # results_list = self.teacher.roi_head.predict(
         #     x, rpn_results_list, batch_data_samples, rescale=False)
-
+        
         for data_samples, results in zip(batch_data_samples, x):
             data_samples.gt_instances = results.pred_sem_seg
 

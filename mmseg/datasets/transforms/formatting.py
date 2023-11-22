@@ -224,14 +224,14 @@ class PackSegInputs(BaseTransform):
             gt_depth_data = dict(
                 data=to_tensor(results['gt_depth_map'][None, ...]))
             data_sample.set_data(dict(gt_depth_map=PixelData(**gt_depth_data)))
-
+        
         img_meta = {}
         for key in self.meta_keys:
             if key in results:
                 img_meta[key] = results[key]
         data_sample.set_metainfo(img_meta)
         packed_results['data_samples'] = data_sample
-
+        # print(img_meta)
         return packed_results
 
     def __repr__(self) -> str:

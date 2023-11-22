@@ -45,7 +45,7 @@ branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 sup_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', reduce_zero_label=False),
-    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
+    dict(type='Resize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='RandAugment', aug_space=color_space, aug_num=1),
     # dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
@@ -58,7 +58,7 @@ sup_pipeline = [
 # pipeline used to augment unlabeled data weakly,
 # which will be sent to teacher model for predicting pseudo instances.
 weak_pipeline = [
-    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
+    dict(type='Resize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='PackSegInputs',
@@ -70,7 +70,7 @@ weak_pipeline = [
 # pipeline used to augment unlabeled data strongly,
 # which will be sent to student model for unsupervised training.
 strong_pipeline = [
-    dict(type='RandomResize', scale=scale, ratio_range=(0.5, 2.0), keep_ratio=True),
+    dict(type='Resize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomOrder',
@@ -161,8 +161,8 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_seg='seg/train/seg_imgs',
-            img_seg_label='seg/train/seg_labels'
+            img_seg='seg/test/seg_imgs',
+            img_seg_label='seg/test/seg_labels'
             ),
         test_mode=True,
         pipeline=test_pipeline,

@@ -83,7 +83,7 @@ class IoUMetric(BaseMetric):
             
             # format_only always for test dataset without ground truth
             if not self.format_only:
-                # print(torch.unique(data_sample['label_seg_map']['data']))
+                # print(data_sample.keys())
                 if 'label_seg_map' in data_sample.keys():
                     label = data_sample['label_seg_map']['data'].squeeze().to(
                         pred_label)

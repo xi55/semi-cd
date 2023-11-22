@@ -14,6 +14,7 @@ from ..builder import build_loss
 from ..losses import accuracy
 from ..utils import resize
 
+import matplotlib.pyplot as plt
 
 class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
     """Base class for BaseDecodeHead.
@@ -283,10 +284,23 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         return self.predict_by_feat(seg_logits, batch_img_metas)
 
     def _stack_batch_gt(self, batch_data_samples: SampleList) -> Tensor:
-        gt_semantic_segs = [
-            data_sample.gt_sem_seg.data for data_sample in batch_data_samples
-        ]
+        if 'gt_instances' in batch_data_samples[0]:
+            gt_semantic_segs = [
+                data_sample.gt_instances.data for data_sample in batch_data_samples
+            ]
+        else:
+            gt_semantic_segs = [
+                data_sample.gt_sem_seg.data for data_sample in batch_data_samples
+            ]
         return torch.stack(gt_semantic_segs, dim=0)
+
+    def display1(self, affinity, s):
+        affinity = affinity.permute(1, 2, 0)
+        affinity = affinity.cpu().numpy()
+        plt.imshow(affinity)
+        plt.title(s)
+        plt.colorbar()
+        plt.show()
 
     def loss_by_feat(self, seg_logits: Tensor,
                      batch_data_samples: SampleList) -> dict:
@@ -303,7 +317,11 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         """
 
         seg_label = self._stack_batch_gt(batch_data_samples)
-        # print(torch.unique(seg_label))
+        # print(seg_logits.shape)
+        # print(seg_label.shape)
+        # print(batch_data_samples[0].keys())
+        # print(batch_data_samples[0].gt_sem_seg)
+        # self.display1(seg_label[0], "A")
         loss = dict()
         seg_logits = resize(
             input=seg_logits,
@@ -315,6 +333,8 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         else:
             seg_weight = None
         seg_label = seg_label.squeeze(1)
+
+        
 
         if not isinstance(self.loss_decode, nn.ModuleList):
             losses_decode = [self.loss_decode]
