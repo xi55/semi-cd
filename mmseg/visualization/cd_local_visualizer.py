@@ -19,6 +19,7 @@ class CDLocalVisualizer(SegLocalVisualizer):
             name: str,
             image: np.ndarray,
             image_from_to: Sequence[np.array],
+            data_batch: dict,
             data_sample: Optional[SegDataSample] = None,
             draw_gt: bool = True,
             draw_pred: bool = True,
@@ -61,9 +62,10 @@ class CDLocalVisualizer(SegLocalVisualizer):
 
         classes = self.dataset_meta.get('classes', None)
         palette = self.dataset_meta.get('palette', None)
-        semantic_classes = self.dataset_meta.get('semantic_classes', None)
-        semantic_palette = self.dataset_meta.get('semantic_palette', None)
-
+        # semantic_classes = self.dataset_meta.get('semantic_classes', None)
+        # semantic_palette = self.dataset_meta.get('semantic_palette', None)
+        semantic_classes = ('background', 'changed')
+        semantic_palette = [[0, 0, 0], [255, 255, 255]]
         gt_img_data = None
         gt_img_data_from = None
         gt_img_data_to = None
@@ -74,35 +76,38 @@ class CDLocalVisualizer(SegLocalVisualizer):
         drawn_img_from = None
         drawn_img_to = None
 
-        
+        # print(data_sample.keys())
+        # print(draw_gt)
+        # print(data_batch.keys())
+        # print(data_batch['data_samples'][0].keys())
 
-        if draw_gt and data_sample is not None and 'gt_sem_seg' in data_sample:
+        if draw_gt and data_batch['data_samples'][0] is not None and 'label_seg_map' in data_batch['data_samples'][0]:
             gt_img_data = image
             assert classes is not None, 'class information is ' \
                                         'not provided when ' \
                                         'visualizing change ' \
                                         'deteaction results.'
             gt_img_data = self._draw_sem_seg(gt_img_data,
-                                             data_sample.gt_sem_seg, classes,
+                                             data_batch['data_samples'][0].label_seg_map, classes,
                                              palette)
-        if draw_gt and data_sample is not None and 'gt_sem_seg_from' in data_sample \
-            and 'gt_sem_seg_to' in data_sample:
+        if draw_gt and data_sample is not None and 'i_seg_from_pred' in data_sample \
+            and 'i_seg_to_pred' in data_sample:
             if exist_img_from_to:
                 gt_img_data_from = image_from_to[0]
                 gt_img_data_to = image_from_to[1]
             else:
                 gt_img_data_from = np.zeros_like(image)
                 gt_img_data_to = np.zeros_like(image)
-            assert semantic_classes is not None, 'class information is ' \
+            assert classes is not None, 'class information is ' \
                                         'not provided when ' \
                                         'visualizing change ' \
                                         'deteaction results.'
             gt_img_data_from = self._draw_sem_seg(gt_img_data_from,
-                                             data_sample.gt_sem_seg_from, semantic_classes,
-                                             semantic_palette)
+                                             data_sample.i_seg_from_pred, classes,
+                                             palette)
             gt_img_data_to = self._draw_sem_seg(gt_img_data_to,
-                                             data_sample.gt_sem_seg_to, semantic_classes,
-                                             semantic_palette)
+                                             data_sample.i_seg_to_pred, classes,
+                                             palette)
 
         if (draw_pred and data_sample is not None
                 and 'pred_sem_seg' in data_sample):
@@ -115,24 +120,22 @@ class CDLocalVisualizer(SegLocalVisualizer):
                                                data_sample.pred_sem_seg,
                                                classes, palette)
             
-        if (draw_pred and data_sample is not None and 'pred_sem_seg_from' in data_sample \
-            and 'pred_sem_seg_to' in data_sample):
+        if (draw_pred and data_sample is not None and 'i_seg_stu_from_pred' in data_sample \
+            and 'i_seg_stu_to_pred' in data_sample):
             if exist_img_from_to:
                 pred_img_data_from = image_from_to[0]
                 pred_img_data_to = image_from_to[1]
             else:
                 pred_img_data_from = np.zeros_like(image)
                 pred_img_data_to = np.zeros_like(image)
-            assert semantic_classes is not None, 'class information is ' \
+            assert classes is not None, 'class information is ' \
                                         'not provided when ' \
                                         'visualizing change ' \
                                         'deteaction results.'
             pred_img_data_from = self._draw_sem_seg(pred_img_data_from,
-                                             data_sample.pred_sem_seg_from, semantic_classes,
-                                             semantic_palette)
+                                             data_sample.i_seg_stu_from_pred, classes, palette)
             pred_img_data_to = self._draw_sem_seg(pred_img_data_to,
-                                             data_sample.pred_sem_seg_to, semantic_classes,
-                                             semantic_palette)
+                                             data_sample.i_seg_stu_to_pred, classes, palette)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
@@ -162,7 +165,10 @@ class CDLocalVisualizer(SegLocalVisualizer):
                 
             else:
                 self.show(drawn_img, win_name=name, wait_time=wait_time)
-
+        # print(name)
+        # print(drawn_img.shape)
+        # print(drawn_img_from.shape)
+        # print(drawn_img_to.shape)
         if out_file is not None:
             if drawn_img_from is not None and drawn_img_to is not None:
                 drawn_img_cat = np.concatenate((drawn_img, drawn_img_from, drawn_img_to), axis=0)

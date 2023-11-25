@@ -80,6 +80,7 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
                 raise e
         
         results['img'] = imgs
+        results['s_img'] = results['img']
         results['img_shape'] = imgs[0].shape[:2]
         results['ori_shape'] = imgs[0].shape[:2]
 

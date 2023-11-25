@@ -209,7 +209,6 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
         Returns:
             Dict: Data in the same format as the model input.
         """
-        # print(data.keys())
         data = self.cast_data(data)  # type: ignore
         inputs = data['inputs']
         
@@ -222,8 +221,6 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
         if self._enable_normalize:
             inputs = [(_input - self.mean) / self.std for _input in inputs]
 
-        # print(self.mean)   
-        # print(self.mean[:3])
         if 'inputs_seg' in data.keys():
             inputs_seg = data['inputs_seg']
             inputs_seg = [_inputs_seg.float() for _inputs_seg in inputs_seg]
@@ -232,6 +229,20 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
             inputs_all = [torch.concat([inputs[i], inputs_seg[i]], dim=0) for i in range(0, len(inputs))]
         else:
             inputs_all = inputs
+
+
+        if 'inputs_s' in data.keys():
+            inputs_s = data['inputs_s']
+            inputs_s = [_inputs_s.float() for _inputs_s in inputs_s]
+            inputs_s = [_input_s[[2, 1, 0, 5, 4, 3], ...] for _input_s in inputs_s]
+            if self._enable_normalize:
+                inputs_s = [(_inputs_s - self.mean) / self.std for _inputs_s in inputs_s]
+            
+            inputs_all = [torch.concat([inputs_all[i], inputs_s[i]], dim=0) for i in range(0, len(inputs_s))]
+        else:
+            inputs_all = inputs_all
+
+        
         if training:
             assert data_samples is not None, ('During training, ',
                                               '`data_samples` must be define.')
@@ -262,5 +273,5 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
                     data_sample.set_metainfo({**pad_info})
             else:
                 inputs_all = torch.stack(inputs_all, dim=0)
-
+        print
         return dict(inputs=inputs_all, data_samples=data_samples)

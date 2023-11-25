@@ -26,7 +26,7 @@ class CDLocalVisBackend(LocalVisBackend):
                 should be RGB. Defaults to None.
             step (int): Global step value to record. Defaults to 0.
         """
-        assert image.dtype != np.uint8
+        assert image.dtype == np.uint8
 
         drawn_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         os.makedirs(self._img_save_dir, exist_ok=True)

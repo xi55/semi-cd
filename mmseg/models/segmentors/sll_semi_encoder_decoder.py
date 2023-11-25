@@ -203,7 +203,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-
+        
         x = self.extract_feat(inputs)
 
         losses = dict()
@@ -252,7 +252,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
 
         seg_logits = self.inference(inputs, batch_img_metas)
 
-        return self.postprocess_result(seg_logits, data_samples)
+        return self.postprocess_result(seg_logits, None)
 
     def _forward(self,
                  inputs: Tensor,
@@ -489,9 +489,10 @@ class SllSemiEncoderDecoder(BaseSegmentor):
             - ``seg_logits``(PixelData): Predicted logits of semantic
                 segmentation before normalization.
         """
-        seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd = seg_logits
+        seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd, seg_logits_stu_from, seg_logits_stu_to = seg_logits
+        
         batch_size, C, H, W = seg_logits_seg.shape
-
+        # print(seg_logits_seg.shape)
         if data_samples is None:
             data_samples = [SegDataSample() for _ in range(batch_size)]
             only_prediction = True
@@ -521,6 +522,12 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 i_seg_cd = seg_logits_cd[i:i + 1, :,
                                           padding_top:H - padding_bottom,
                                           padding_left:W - padding_right]
+                i_seg_stu_from = seg_logits_stu_from[i:i + 1, :,
+                                          padding_top:H - padding_bottom,
+                                          padding_left:W - padding_right]
+                i_seg_stu_to = seg_logits_stu_to[i:i + 1, :,
+                                          padding_top:H - padding_bottom,
+                                          padding_left:W - padding_right]
 
                 flip = img_meta.get('flip', None)
                 if flip:
@@ -531,15 +538,19 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                         i_seg_from = i_seg_from.flip(dims=(3, ))
                         i_seg_to = i_seg_to.flip(dims=(3, ))
                         i_seg_cd = i_seg_cd.flip(dims=(3, ))
+                        i_seg_stu_from = i_seg_stu_from.flip(dims=(3, ))
+                        i_seg_stu_to = i_seg_stu_to.flip(dims=(3, ))
                     else:
                         i_seg_logits = i_seg_logits.flip(dims=(2, ))
                         i_seg_from = i_seg_from.flip(dims=(2, ))
                         i_seg_to = i_seg_to.flip(dims=(2, ))
                         i_seg_cd = i_seg_cd.flip(dims=(2, ))
+                        i_seg_stu_from = i_seg_stu_from.flip(dims=(2, ))
+                        i_seg_stu_to = i_seg_stu_to.flip(dims=(2, ))
 
                 # resize as original shape
                 res=[]
-                for i_seg in [i_seg_from, i_seg_to, i_seg_logits, i_seg_cd]:
+                for i_seg in [i_seg_from, i_seg_to, i_seg_logits, i_seg_cd, i_seg_stu_from, i_seg_stu_to]:
                     i_seg = resize(
                         i_seg,
                         size=img_meta['ori_shape'],
@@ -547,30 +558,43 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                         align_corners=self.align_corners,
                         warning=False).squeeze(0)
                     res.append(i_seg)
-                i_seg_from, i_seg_to, i_seg_logits, i_seg_cd = res
+                i_seg_from, i_seg_to, i_seg_logits, i_seg_cd, i_seg_stu_from, i_seg_stu_to = res
             else:
                 i_seg_logits = seg_logits_seg[i]
-                i_seg_from = i_seg_from[i]
-                i_seg_to = i_seg_to[i]
-                i_seg_cd = i_seg_cd[i]
-
+                i_seg_from = seg_logits_from[i]
+                i_seg_to = seg_logits_to[i]
+                i_seg_cd = seg_logits_cd[i]
+                i_seg_stu_from = seg_logits_stu_from[i]
+                i_seg_stu_to = seg_logits_stu_to[i]
+            # print(torch.unique(i_seg_logits))
             if C > 1:
+                # print(i_seg_from.shape)
                 i_seg_pred = i_seg_logits.argmax(dim=0, keepdim=True)
                 i_seg_from_pred = i_seg_from.argmax(dim=0, keepdim=True)
                 i_seg_to_pred = i_seg_to.argmax(dim=0, keepdim=True)
+                i_seg_stu_from_pred = i_seg_stu_from.argmax(dim=0, keepdim=True)
+                i_seg_stu_to_pred = i_seg_stu_from.argmax(dim=0, keepdim=True)
+                # print(torch.unique(i_seg_from_pred))
             else:
+                # print(1)
                 i_seg_logits = i_seg_logits.sigmoid()
                 i_seg_from = i_seg_from.sigmoid()
                 i_seg_to = i_seg_to.sigmoid()
+                i_seg_stu_from = i_seg_stu_from.sigmoid()
+                i_seg_stu_to = i_seg_stu_to.sigmoid()
                 
-
+                
                 i_seg_pred = (i_seg_logits >
                               0.5).to(i_seg_logits)
                 i_seg_from_pred = (i_seg_from >
                               0.5).to(i_seg_from)
                 i_seg_to_pred = (i_seg_to >
                               0.5).to(i_seg_to)
-
+                i_seg_stu_from_pred = (i_seg_stu_from >
+                              0.5).to(i_seg_stu_from)
+                i_seg_stu_to_pred = (i_seg_stu_to >
+                              0.5).to(i_seg_stu_to)
+                
             i_seg_cd_pred = i_seg_cd.sigmoid()
 
             i_seg_cd_pred[i_seg_cd_pred >= 0.5] = 1
@@ -586,7 +610,11 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 'i_seg_to_pred':
                 PixelData(**{'data': i_seg_to_pred}),
                 'i_seg_cd_pred':
-                PixelData(**{'data': i_seg_cd_pred})
+                PixelData(**{'data': i_seg_cd_pred}),
+                'i_seg_stu_from_pred':
+                PixelData(**{'data': i_seg_stu_from_pred}),
+                'i_seg_stu_to_pred':
+                PixelData(**{'data': i_seg_stu_to_pred})
             })
-
+        # print(torch.unique(data_samples[0].i_seg_from_pred.data))
         return data_samples

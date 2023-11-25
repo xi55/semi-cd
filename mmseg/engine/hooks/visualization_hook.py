@@ -83,7 +83,7 @@ class SegVisualizationHook(Hook):
 
         if self.every_n_inner_iters(batch_idx, self.interval):
             for output in outputs:
-                img_path = output.img_path
+                img_path = data_batch['data_samples'][0].img_path
                 img_bytes = fileio.get(
                     img_path, backend_args=self.backend_args)
                 img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
@@ -165,11 +165,10 @@ class CDVisualizationHook(SegVisualizationHook):
         """
         if self.draw is False or mode == 'train':
             return
-        # print(self.backend_args)
         if self.every_n_inner_iters(batch_idx, self.interval):
 
             for output in outputs:
-                img_path = output.img_path[0]
+                img_path = data_batch['data_samples'][0].img_path[0]
                 img_from_to = []
                 window_name = osp.basename(img_path).split('.')[0]
                 if self.img_shape is not None:
@@ -183,11 +182,10 @@ class CDVisualizationHook(SegVisualizationHook):
 
                 if self.draw_on_from_to_img:
                     # for semantic change detection
-                    for _img_path in output.img_path:
+                    for _img_path in data_batch['data_samples'][0].img_path:
                         _img_bytes = fileio.get(
                             _img_path, backend_args=self.backend_args)
                         _img = mmcv.imfrombytes(_img_bytes, channel_order='rgb')
-                        # print(_img.shape)
                         img_from_to.append(_img)
                         
                 img = np.zeros(self.img_shape)
@@ -195,8 +193,9 @@ class CDVisualizationHook(SegVisualizationHook):
                     window_name,
                     img,
                     img_from_to,
+                    data_batch=data_batch,
                     data_sample=output,
                     show=self.show,
                     wait_time=self.wait_time,
                     step=runner.iter,
-                    draw_gt=False)
+                    draw_gt=True)

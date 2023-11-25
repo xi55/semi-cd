@@ -108,7 +108,7 @@ class SemiHead(BaseDecodeHead):
         losses = self.loss_by_feat(seg_logits, batch_data_samples)
         return losses
 
-    def loss_stu(self, stu_from: List[Tensor], stu_to: List[Tensor], pseudo_from, pseudo_to):
+    def loss_stu(self, stu_from: List[Tensor], stu_to: List[Tensor], pseudo_from, pseudo_to, mask_from, mask_to):
         seg_from = self.forward(stu_from)
         # print(len(stu_to))
         seg_to = self.forward(stu_to)
@@ -116,13 +116,13 @@ class SemiHead(BaseDecodeHead):
 
         seg_from = resize(
             input=seg_from,
-            size=pseudo_from.shape[2:],
+            size=pseudo_from.shape[1:],
             mode='bilinear',
             align_corners=self.align_corners)
         
         seg_to = resize(
             input=seg_to,
-            size=pseudo_to.shape[2:],
+            size=pseudo_to.shape[1:],
             mode='bilinear',
             align_corners=self.align_corners)
 
@@ -149,13 +149,13 @@ class SemiHead(BaseDecodeHead):
         loss_from_stu = self.loss_stu_decode(
             seg_from,
             pseudo_from,
-            weight=from_weight,
+            weight=mask_from,
             ignore_index=self.ignore_index)
         
         loss_to_std = self.loss_stu_decode(
             seg_to,
             pseudo_to,
-            weight=to_weight,
+            weight=mask_to,
             ignore_index=self.ignore_index)
 
         # num_classes = seg_to.size()[1]
@@ -163,7 +163,7 @@ class SemiHead(BaseDecodeHead):
 
         # loss_from_stu = torch.sum((pseudo_from - seg_from)**2) / num_classes
         # loss_to_std = torch.sum((pseudo_to - seg_to)**2) / num_classes
-        loss['loss_stu'] = (loss_from_stu + loss_to_std)
+        loss['loss_stu'] = 0.3 * (loss_from_stu + loss_to_std)
         # print(loss_from_stu, loss_to_std)
         
         return loss

@@ -1,12 +1,13 @@
 # Copyright (c) Open-CD. All rights reserved.
 from typing import List, Optional
-from mmseg.utils import (ConfigType, SampleList, add_prefix)
+from mmseg.utils import (ConfigType, SampleList, OptConfigType, add_prefix)
 import torch
 from torch import Tensor
 import torch.nn as nn
 from mmseg.registry import MODELS
 from .sll_semi_encoder_decoder import SllSemiEncoderDecoder
 import matplotlib.pyplot as plt
+from mmengine.structures import PixelData
 
 @MODELS.register_module()
 class SLLEncoderDecoder(SllSemiEncoderDecoder):
@@ -16,7 +17,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
     Note that auxiliary_head is only used for deep supervision during training,
     which could be dumped during inference.
     """
-    def __init__(self, backbone, decode_head, pretrained: Optional[str] = None, *args, **kwargs):
+    def __init__(self, backbone, decode_head, neck: OptConfigType = None, pretrained: Optional[str] = None, *args, **kwargs):
         super().__init__(backbone = backbone, decode_head=decode_head, *args, **kwargs)
 
         if pretrained is not None:
@@ -26,11 +27,14 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         self.backbone_student = MODELS.build(backbone)
         self.backbone_teacher = MODELS.build(backbone)
         self._init_decode_head(decode_head)
+        self._init_neck(neck)
         self.freeze(self.backbone_teacher)
 
     @staticmethod
     def freeze(model: nn.Module):
         """Freeze the model."""
+        if not model.training:
+            return
         model.eval()
         for param in model.parameters():
             param.requires_grad = False
@@ -55,15 +59,15 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         """Extract features from images."""
         # `in_channels` is not in the ATTRIBUTE for some backbone CLASS.
         if isinstance(inputs, Tensor):
-            img_from, img_to, img_seg = torch.split(inputs, self.backbone_inchannels, dim=1)
+            img_from, img_to, img_seg, img_from_strong, img_to_strong = torch.split(inputs, self.backbone_inchannels, dim=1)
         elif isinstance(inputs, list):
             img_from, img_to, img_seg = inputs
 
         feat_from = self.backbone_teacher(img_from)
         feat_to = self.backbone_teacher(img_to)
 
-        stu_from = self.backbone_student(img_from)
-        stu_to = self.backbone_student(img_to)
+        stu_from = self.backbone_student(img_from_strong)
+        stu_to = self.backbone_student(img_to_strong)
 
 
         feat_seg = self.backbone_student(img_seg)
@@ -78,10 +82,11 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
 
             feat_from[3] = self.neck_teacher(feat_from[3])
             feat_to[3] = self.neck_teacher(feat_to[3])
-            # feat_seg[3] = self.neck(feat_seg[3])
+            
 
             stu_from[3] = self.neck_student(stu_from[3])
             stu_to[3] = self.neck_student(stu_to[3])
+            feat_seg[3] = self.neck_student(feat_seg[3])
 
         # x.append(x_seg)
         return feat_from, feat_to, feat_seg, stu_from, stu_to
@@ -90,12 +95,17 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                       batch_img_metas: List[dict]) -> Tensor:
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        feat_from, feat_to, feat_seg, _, _  = self.extract_feat(inputs)
+        feat_from, feat_to, feat_seg, stu_from, stu_to = self.extract_feat(inputs)
         seg_logits_from = self.decode_teacher.predict(feat_from, batch_img_metas,
                                               self.test_cfg)
         
         seg_logits_to = self.decode_teacher.predict(feat_to, batch_img_metas,
                                               self.test_cfg)
+
+        seg_logits_stu_from = self.decode_student.predict(stu_from, batch_img_metas,
+                                                    self.test_cfg)
+        seg_logits_stu_to = self.decode_student.predict(stu_to, batch_img_metas,
+                                                    self.test_cfg)
 
         seg_logits_seg = self.decode_student.predict(feat_seg, batch_img_metas,
                                                     self.test_cfg)
@@ -104,7 +114,8 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                                                     self.test_cfg)
         # print(batch_img_metas[0].keys())
         # self.display1(seg_logits_cd[0], batch_img_metas[0]['seg_map_path'].split('\\')[-1])
-        return [seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd]
+        
+        return [seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd, seg_logits_stu_from, seg_logits_stu_to]
 
     def display1(self, affinity, s):
         affinity = affinity.permute(1, 2, 0)
@@ -139,21 +150,20 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                 dict[str, Tensor]: a dictionary of loss components
             """
             # _, _, img_seg = torch.split(inputs, self.backbone_inchannels, dim=1)
-            # print()
             # self.display1(img_seg[0], data_samples[0].seg_map_path.split('\\')[-1])
             feat_from, feat_to, feat_seg, stu_from, stu_to = self.extract_feat(inputs)
-            pseudo_label, pseudo_from, pseudo_to = self.get_pseudo(inputs, data_samples)
+            pseudo_label, pseudo_from, pseudo_to, mask_from, mask_to = self.get_pseudo([feat_from, feat_to], data_samples)
             # x.append(x_seg)
             # print(len(x))
             losses = dict()
 
-            loss_decode = self._decode_head_forward_train(feat_seg, stu_from, stu_to, pseudo_from, pseudo_to, data_samples)
+            loss_decode = self._decode_head_forward_train(feat_seg, stu_from, stu_to, pseudo_from, pseudo_to, mask_from, mask_to, data_samples)
             losses.update(loss_decode)
 
             
 
-            loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label, data_samples)
-            losses.update(loss_cd_decode)
+            # loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label, data_samples)
+            # losses.update(loss_cd_decode)
             
             if self.with_auxiliary_head:
                 loss_aux = self._auxiliary_head_forward_train([feat_from, feat_to, feat_seg], data_samples)
@@ -166,6 +176,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                                    stu_from: List[Tensor], 
                                    stu_to: List[Tensor],
                                    pseudo_from, pseudo_to,
+                                   mask_from, mask_to,
                                    data_samples: SampleList) -> dict:
         """Run forward function and calculate loss for decode head in
         training."""
@@ -173,7 +184,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         
         loss_decode = self.decode_student.loss(inputs, data_samples,
                                             self.train_cfg)
-        loss_stu = self.decode_student.loss_stu(stu_from, stu_to, pseudo_from, pseudo_to)
+        loss_stu = self.decode_student.loss_stu(stu_from, stu_to, pseudo_from, pseudo_to, mask_from, mask_to)
         loss_decode.update(loss_stu)
 
         losses.update(add_prefix(loss_decode, 'decode'))
@@ -181,15 +192,36 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
 
     @torch.no_grad()
     def get_pseudo(self, inputs, data_samples):
-        pseudo_pred = self.predict(inputs, data_samples) #语义分割预测输出
-        pseudo_from = self._stack_batch_from(pseudo_pred) #t1时刻时序图伪标签
-        pseudo_to = self._stack_batch_to(pseudo_pred) #t2时刻时序图伪标签
+        # print(data_samples[0].keys())
+        feat_from, feat_to = inputs
+
+        # pseudo_pred = self.predict(inputs, data_samples) #语义分割预测输出
+        # print(torch.unique(pseudo_pred[0].i_seg_from_pred.data))
+        # pseudo_from = self._stack_batch_from(pseudo_pred) #t1时刻时序图伪标签
+        # pseudo_to = self._stack_batch_to(pseudo_pred) #t2时刻时序图伪标签
+        seg_logits_from = self.decode_teacher.predict(feat_from, data_samples,
+                                              self.test_cfg)
+        
+        seg_logits_to = self.decode_teacher.predict(feat_to, data_samples,
+                                              self.test_cfg)
+
+        pseudo_label_from = torch.softmax(seg_logits_from.detach(), dim=1)
+        pseudo_label_to = torch.softmax(seg_logits_to.detach(), dim=1)
+
+        max_label_from, pseudo_label_from = torch.max(pseudo_label_from, dim=1)
+        max_label_to, pseudo_label_to = torch.max(pseudo_label_to, dim=1)
+
+        mask_from = max_label_from.ge(0.95).float()
+        mask_to = max_label_to.ge(0.95).float()
+        # print(seg_logits_from.shape)
+        
         # pseudo_label = torch.logical_xor(pseudo_from.int(), pseudo_to.int()).int() #t1，t2时序图异或得到变化伪标签
-        pseudo_label = torch.tensor((pseudo_from != pseudo_to), dtype=torch.int32, device='cuda:0', requires_grad=False)
+        # pseudo_label = torch.tensor((pseudo_from != pseudo_to), dtype=torch.int32, device='cuda:0', requires_grad=False)
+        
         # self.display1(pseudo_from[0], data_samples[0].seg_map_path.split('\\')[-1])
         # self.display1(pseudo_to[0], data_samples[0].seg_map_path.split('\\')[-1])
         # self.display1(pseudo_label[0], data_samples[0].seg_map_path.split('\\')[-1])
         # print('pseudo_pred: ')
         # print(pseudo_pred[0].i_seg_cd_pred.data)
-        return pseudo_label, pseudo_from, pseudo_to
+        return None, pseudo_label_from, pseudo_label_to, mask_from, mask_to
 

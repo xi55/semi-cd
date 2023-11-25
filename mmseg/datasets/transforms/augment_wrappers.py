@@ -253,6 +253,8 @@ class RandAugment(RandomChoice):
         Returns:
             dict: Result dict with RandAugment.
         """
+        results['s_img'] = results['img']
+        # print(results.keys())
         for idx in self.random_pipeline_index():
             results = self.transforms[idx](results)
         return results

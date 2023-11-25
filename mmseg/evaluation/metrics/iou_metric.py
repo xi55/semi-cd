@@ -84,8 +84,8 @@ class IoUMetric(BaseMetric):
             # format_only always for test dataset without ground truth
             if not self.format_only:
                 # print(torch.unique(data_sample['label_seg_map']['data']))
-                label = data_sample['label_seg_map']['data'].squeeze().to(
-                    pred_label)
+                label = data_batch['data_samples'][0].label_seg_map.data
+                label = label.squeeze().to(pred_label)
                 self.results.append(
                     self.intersect_and_union(pred_label, label, num_classes,
                                              self.ignore_index))

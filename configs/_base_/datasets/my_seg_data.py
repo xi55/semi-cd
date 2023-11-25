@@ -2,12 +2,40 @@ dataset_type = 'my_seg_Dataset'
 data_root = '/root/autodl-tmp/data'
 
 crop_size = (512, 512)
+
+color_space = [
+    # [dict(type='ColorTransform')],
+    [dict(type='AutoContrast')],
+    [dict(type='Equalize')],
+    [dict(type='Sharpness')],
+    [dict(type='Posterize')],
+    [dict(type='Solarize')],
+    [dict(type='Color')],
+    [dict(type='Contrast')],
+    [dict(type='Brightness')],
+]
+
+geometric = [
+    [dict(type='Rotate')],
+    [dict(type='ShearX')],
+    [dict(type='ShearY')],
+    [dict(type='TranslateX')],
+    [dict(type='TranslateY')],
+]
+
 train_pipeline = [
     dict(type='MultiImgLoadImageFromFile'),
     dict(type='MultiImgLoadAnnotations'),
     dict(type='MultiImgRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='horizontal'),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='vertical'),
+
+    dict(
+        type='RandomOrder',
+        transforms=[
+            dict(type='RandAugment', aug_space=color_space, aug_num=1),
+            dict(type='RandAugment', aug_space=geometric, aug_num=1),
+        ]),
     # dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
     # dict(
     #     type='MultiImgRandomResize',

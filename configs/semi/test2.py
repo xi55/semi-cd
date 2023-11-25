@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py']
 crop_size = (512, 512)
 # data_preprocessor = dict(size=crop_size)
-# checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_tiny_patch4_window7_224_20220317-1cdeb081.pth'  # noqa
+checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_tiny_patch4_window7_224_20220317-1cdeb081.pth'  # noqa
 data_preprocessor = dict(
     type='DualInputSegDataPreProcessor',
     mean=[123.675, 116.28, 103.53] * 2,
@@ -15,7 +15,7 @@ data_preprocessor = dict(
     seg_pad_val=255,
     test_cfg=dict(size_divisor=32))
 norm_cfg = dict(type='BN', requires_grad=True)
-checkpoint_file = '/root/autodl-tmp/pretrain/iter_160000.pth'
+# checkpoint_file = '/root/autodl-tmp/pretrain/iter_160000.pth'
 model = dict(
     type='SLLEncoderDecoder',
     data_preprocessor=data_preprocessor,
