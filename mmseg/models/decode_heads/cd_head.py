@@ -164,8 +164,8 @@ class SSL_CD_Head(BaseDecodeHead):
                         nn.ReLU(inplace=True),
                         nn.UpsamplingBilinear2d(scale_factor=2)
                         )
-        self.conv_out = torch.nn.Conv2d(8,1,kernel_size=3,stride=1,padding=1)
-        self.conv_out_class = torch.nn.Conv2d(channel_list[3],self.out_channels, kernel_size=1,stride=1,padding=0)
+        # self.conv_out = torch.nn.Conv2d(8,1,kernel_size=3,stride=1,padding=1)
+        self.conv_out_class = torch.nn.Conv2d(8,9,kernel_size=3,stride=1,padding=1)
 
 
 
@@ -187,21 +187,20 @@ class SSL_CD_Head(BaseDecodeHead):
         y2 = self.decoder1(y2, x2[0])
         c = self.catc1(c, self.df1(y1, y2))
 
-        y = self.conv_out(self.upsample_x2(c))
-        
+        y = self.conv_out_class(self.upsample_x2(c))
         return y
 
 
     def display1(self, affinity, s):
         affinity = affinity.unsqueeze(2)
         affinity = affinity.cpu().numpy()
-        plt.imshow(affinity)
+        plt.imsave('./res/1.png', affinity)
         plt.title(s)
         plt.colorbar()
         plt.show()
 
 
-    def loss(self, inputs: Tuple[Tensor], pseudo_label: Tensor, data_samples: SampleList,
+    def loss(self, inputs: Tuple[Tensor], pseudo_label: Tensor, mask_cd: Tensor, data_samples: SampleList,
              train_cfg: ConfigType) -> dict:
         """Forward function for training.
 
@@ -216,15 +215,15 @@ class SSL_CD_Head(BaseDecodeHead):
             dict[str, Tensor]: a dictionary of loss components
         """
         seg_logits = self.forward(inputs)
-        losses = self.loss_by_feat(seg_logits, pseudo_label, data_samples)
+        losses = self.loss_by_feat(seg_logits, pseudo_label, mask_cd, data_samples)
         return losses
 
     def loss_by_feat(self, seg_logits: Tensor,
-                     pseudo_label: Tensor, data_samples: SampleList) -> dict:
+                     pseudo_label: Tensor, mask_cd: Tensor, data_samples: SampleList) -> dict:
 
         loss = dict()
-
-        pseudo_label_size = pseudo_label.shape[2:]
+        # print(pseudo_label.shape)
+        pseudo_label_size = pseudo_label.shape[1:]
 
         seg_logits = resize(
             input=seg_logits,
@@ -236,7 +235,7 @@ class SSL_CD_Head(BaseDecodeHead):
             seg_weight = self.sampler.sample(seg_logits, pseudo_label)
         else:
             seg_weight = None
-        pseudo_label = pseudo_label.squeeze(1)
+        # pseudo_label = pseudo_label.squeeze(1)
 
         # vis = pseudo_label[0]
         # vis[vis == 255.0] == 2
@@ -245,10 +244,14 @@ class SSL_CD_Head(BaseDecodeHead):
         # print(pseudo_label[0])
         # print(torch.unique(seg_logits))
         # print(torch.unique(pseudo_label))
+        
+        # print(torch.unique(pseudo_label))
+        # print(seg_logits.shape)
+        # self.display1(pseudo_label[0], data_samples[0].seg_map_path.split('\\')[-1])
         loss['loss_cd_seg'] = self.loss_decode(
                     seg_logits,
                     pseudo_label.long(),
-                    weight=seg_weight,
+                    weight=mask_cd,
                     ignore_index=self.ignore_index)
         # print(loss['loss_cd_seg'])
         # seg_label = seg_label.squeeze(1)
