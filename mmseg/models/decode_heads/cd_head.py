@@ -164,8 +164,8 @@ class SSL_CD_Head(BaseDecodeHead):
                         nn.ReLU(inplace=True),
                         nn.UpsamplingBilinear2d(scale_factor=2)
                         )
-        # self.conv_out = torch.nn.Conv2d(8,1,kernel_size=3,stride=1,padding=1)
-        self.conv_out_class = torch.nn.Conv2d(8,9,kernel_size=3,stride=1,padding=1)
+        self.conv_out = torch.nn.Conv2d(8,1,kernel_size=3,stride=1,padding=1)
+        # self.conv_out_class = torch.nn.Conv2d(8,9,kernel_size=3,stride=1,padding=1)
 
 
 
@@ -187,7 +187,7 @@ class SSL_CD_Head(BaseDecodeHead):
         y2 = self.decoder1(y2, x2[0])
         c = self.catc1(c, self.df1(y1, y2))
 
-        y = self.conv_out_class(self.upsample_x2(c))
+        y = self.conv_out(self.upsample_x2(c))
         return y
 
 
@@ -222,7 +222,7 @@ class SSL_CD_Head(BaseDecodeHead):
                      pseudo_label: Tensor, mask_cd: Tensor, data_samples: SampleList) -> dict:
 
         loss = dict()
-        # print(pseudo_label.shape)
+        
         pseudo_label_size = pseudo_label.shape[1:]
 
         seg_logits = resize(
@@ -236,18 +236,10 @@ class SSL_CD_Head(BaseDecodeHead):
         else:
             seg_weight = None
         # pseudo_label = pseudo_label.squeeze(1)
-
-        # vis = pseudo_label[0]
-        # vis[vis == 255.0] == 2
-        # self.display1(vis, data_samples[0].seg_map_path.split('\\')[-1])
-        # print(seg_logits[0])
-        # print(pseudo_label[0])
-        # print(torch.unique(seg_logits))
-        # print(torch.unique(pseudo_label))
-        
-        # print(torch.unique(pseudo_label))
-        # print(seg_logits.shape)
         # self.display1(pseudo_label[0], data_samples[0].seg_map_path.split('\\')[-1])
+        # print(seg_logits)
+        # print(pseudo_label)
+
         loss['loss_cd_seg'] = self.loss_decode(
                     seg_logits,
                     pseudo_label.long(),
@@ -255,6 +247,10 @@ class SSL_CD_Head(BaseDecodeHead):
                     ignore_index=self.ignore_index)
         # print(loss['loss_cd_seg'])
         # seg_label = seg_label.squeeze(1)
+        
+        # print(torch.unique(seg_logits))
+        # print(torch.unique(pseudo_label))
+        # seg_logits = torch.softmax(seg_logits, dim=1)
         loss['acc_seg'] = accuracy(
             seg_logits, pseudo_label, ignore_index=self.ignore_index)
         return loss

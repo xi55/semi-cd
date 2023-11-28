@@ -135,11 +135,6 @@ class SemiHead(BaseDecodeHead):
         pseudo_from = pseudo_from.squeeze(1)
         pseudo_to = pseudo_to.squeeze(1)
 
-        confidence_from = torch.softmax(seg_from, dim=1)
-        confidence_to = torch.softmax(seg_to, dim=1)
-        
-        thresh_from_mask = (torch.max(confidence_from, dim=1).values >= 0.95).int()
-        thresh_to_mask = (torch.max(confidence_to, dim=1).values >= 0.95).int()
         # print(torch.unique(torch.max(confidence_from, dim=1).values))
         # print(thresh_from_mask)
         # print(confidence_from, confidence_to)
@@ -163,7 +158,7 @@ class SemiHead(BaseDecodeHead):
 
         # loss_from_stu = torch.sum((pseudo_from - seg_from)**2) / num_classes
         # loss_to_std = torch.sum((pseudo_to - seg_to)**2) / num_classes
-        loss['loss_stu'] = 0.3 * (loss_from_stu + loss_to_std)
+        loss['loss_stu'] = 0.5 * (loss_from_stu + loss_to_std)
         # print(loss_from_stu, loss_to_std)
         
         return loss

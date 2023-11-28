@@ -165,10 +165,11 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
             losses.update(loss_decode)
 
             
-            if losses['decode.loss_stu'] > 0.1:
-                loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label_cd, mask_cd, data_samples)
-                losses.update(loss_cd_decode)
-            
+            # if losses['decode.loss_stu'] > 0.1:
+            #     loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label_cd, mask_cd, data_samples)
+            #     losses.update(loss_cd_decode)
+            loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label_cd, mask_cd, data_samples)
+            losses.update(loss_cd_decode)
             if self.with_auxiliary_head:
                 loss_aux = self._auxiliary_head_forward_train([feat_from, feat_to, feat_seg], data_samples)
                 losses.update(loss_aux)
@@ -196,13 +197,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
 
     @torch.no_grad()
     def get_pseudo(self, inputs, data_samples):
-        # print(data_samples[0].keys())
         feat_from, feat_to = inputs
-
-        # pseudo_pred = self.predict(inputs, data_samples) #语义分割预测输出
-        # print(torch.unique(pseudo_pred[0].i_seg_from_pred.data))
-        # pseudo_from = self._stack_batch_from(pseudo_pred) #t1时刻时序图伪标签
-        # pseudo_to = self._stack_batch_to(pseudo_pred) #t2时刻时序图伪标签
         seg_logits_from = self.decode_teacher.predict(feat_from, data_samples,
                                               self.test_cfg)
         
@@ -211,23 +206,14 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         pseudo_label_from = torch.softmax(seg_logits_from.detach(), dim=1)
         pseudo_label_to = torch.softmax(seg_logits_to.detach(), dim=1)
 
-        # pseudo_label = torch.logical_xor(pseudo_label_from, pseudo_label_to).int() #t1，t2时序图异或得到变化伪标签
-        # print(torch.unique(pseudo_label_to))
         max_label_cd, pseudo_label_cd = torch.max(torch.abs(pseudo_label_to - pseudo_label_from), dim=1)
         max_label_from, pseudo_label_from = torch.max(pseudo_label_from, dim=1)
         max_label_to, pseudo_label_to = torch.max(pseudo_label_to, dim=1)
-        
+        pseudo_label = torch.logical_xor(pseudo_label_from, pseudo_label_to).float() #t1，t2时序图异或得到变化伪标签
         mask_from = max_label_from.ge(0.95).float()
         mask_to = max_label_to.ge(0.95).float()
-        # mask_cd = max_label_cd.ge(0.95).float()
-        
-        
-        # pseudo_label = torch.tensor((pseudo_from != pseudo_to), dtype=torch.int32, device='cuda:0', requires_grad=False)
-        
-        # self.display1(pseudo_from[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # self.display1(pseudo_to[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # self.display1(pseudo_label[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # print('pseudo_pred: ')
-        # print(pseudo_pred[0].i_seg_cd_pred.data)
-        return pseudo_label_cd, pseudo_label_from, pseudo_label_to, mask_from, mask_to, None
+        mask_cd = max_label_cd.ge(0.1).float()
+        # print(torch.unique(mask_cd))
+        # pseudo_label = (pseudo_label == pseudo_label_cd).int()
+        return pseudo_label, pseudo_label_from, pseudo_label_to, mask_from, mask_to, None
 

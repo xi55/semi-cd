@@ -169,6 +169,8 @@ class SllSemiEncoderDecoder(BaseSegmentor):
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
+        # print(pseudo_label_cd.shape)
+        # print(torch.unique(pseudo_label_cd))
         loss_cd = self.cd_decode_head.loss(inputs, pseudo_label_cd, mask_cd, data_samples,
                                             self.train_cfg)
 

@@ -3,8 +3,8 @@ _base_ = [
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py']
 crop_size = (512, 512)
 # data_preprocessor = dict(size=crop_size)
-# checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_tiny_patch4_window7_224_20220317-1cdeb081.pth'  # noqa
-checkpoint_file = '/root/autodl-tmp/logs/test/2/iter_40000.pth'
+checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_tiny_patch4_window7_224_20220317-1cdeb081.pth'  # noqa
+# checkpoint_file = '/root/autodl-tmp/logs/test/2/iter_40000.pth'
 data_preprocessor = dict(
     type='DualInputSegDataPreProcessor',
     mean=[123.675, 116.28, 103.53] * 2,
@@ -51,7 +51,7 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     auxiliary_head=None)
 
 vis_backends = [dict(type='CDLocalVisBackend')]
