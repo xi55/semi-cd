@@ -89,6 +89,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=8)
+train_dataloader = dict(batch_size=16)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader

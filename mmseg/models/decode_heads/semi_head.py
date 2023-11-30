@@ -108,23 +108,40 @@ class SemiHead(BaseDecodeHead):
         losses = self.loss_by_feat(seg_logits, batch_data_samples)
         return losses
 
-    def loss_stu(self, stu_from: List[Tensor], stu_to: List[Tensor], pseudo_from, pseudo_to, mask_from, mask_to):
+    def loss_stu(self, 
+                 stu_from: List[Tensor], stu_to: List[Tensor], 
+                 feat_from, feat_to,
+                 pseudo_from, pseudo_to, 
+                 mask_from, mask_to, 
+                 seg_fp_from, seg_fp_to
+                 ):
         seg_from = self.forward(stu_from)
-        # print(len(stu_to))
         seg_to = self.forward(stu_to)
-        loss = dict()
 
-        seg_from = resize(
-            input=seg_from,
-            size=pseudo_from.shape[1:],
-            mode='bilinear',
-            align_corners=self.align_corners)
+        seg_w_from = self.forward(feat_from)
+        seg_w_to = self.forward(feat_to)
+
+        seg_fp_from = self.forward(seg_fp_from)
+        seg_fp_to = self.forward(seg_fp_to)
         
-        seg_to = resize(
-            input=seg_to,
-            size=pseudo_to.shape[1:],
-            mode='bilinear',
-            align_corners=self.align_corners)
+
+        loss = dict()
+        
+        # similarity_w = F.cosine_similarity(seg_w_from, seg_w_to, dim=1).unsqueeze(1)
+        # similarity_s = F.cosine_similarity(seg_from, seg_to, dim=1).unsqueeze(1)
+        
+        # similarity_w = torch.softmax(similarity_w.view(seg_from.shape[0], -1), dim=1)
+        # similarity_s = torch.softmax(similarity_s.view(seg_from.shape[0], -1), dim=1)
+
+        # epsilon = 1e-8
+        # loss_ws = F.kl_div(similarity_s.log(), similarity_w, reduction='mean', log_target=True)
+        # print(loss_ws)
+
+        u_preds = [resize(input=u_pred, size=pseudo_from.shape[1:], 
+                          mode='bilinear', align_corners=self.align_corners) 
+                          for u_pred in [seg_from, seg_to, seg_fp_from, seg_fp_to]]
+        seg_from, seg_to, seg_fp_from, seg_fp_to = u_preds
+
 
         if self.sampler is not None:
             from_weight = self.sampler.sample(seg_from, pseudo_from)
@@ -139,7 +156,7 @@ class SemiHead(BaseDecodeHead):
         # print(thresh_from_mask)
         # print(confidence_from, confidence_to)
         # print(pseudo_from.shape)
-        #self.display1(pseudo_from[0].unsqueeze(0), 'A')
+        # self.display1(pseudo_from[0].unsqueeze(0), 'A')
         #self.display1(pseudo_from[1].unsqueeze(0), 'B')
         loss_from_stu = self.loss_stu_decode(
             seg_from,
@@ -152,6 +169,18 @@ class SemiHead(BaseDecodeHead):
             pseudo_to,
             weight=mask_to,
             ignore_index=self.ignore_index)
+        
+        loss_from_fp = self.loss_stu_decode(
+            seg_fp_from,
+            pseudo_from,
+            weight=mask_from,
+            ignore_index=self.ignore_index)
+        
+        loss_to_fp = self.loss_stu_decode(
+            seg_fp_to,
+            pseudo_to,
+            weight=mask_to,
+            ignore_index=self.ignore_index)
 
         # num_classes = seg_to.size()[1]
 
@@ -159,10 +188,10 @@ class SemiHead(BaseDecodeHead):
         # loss_from_stu = torch.sum((pseudo_from - seg_from)**2) / num_classes
         # loss_to_std = torch.sum((pseudo_to - seg_to)**2) / num_classes
         loss['loss_stu'] = 0.5 * (loss_from_stu + loss_to_std)
-        # print(loss_from_stu, loss_to_std)
+        loss['loss_fp'] = 0.5 * (loss_from_fp + loss_to_fp)
+        # loss['loss_KL'] = 0.3 * loss_ws
         
         return loss
-
 
     def loss_by_feat(self, seg_logits: Tensor,
                      batch_data_samples: SampleList) -> dict:
