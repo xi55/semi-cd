@@ -145,22 +145,22 @@ class CDLocalVisualizer(SegLocalVisualizer):
             drawn_img = pred_img_data
 
         if gt_img_data_from is not None and pred_img_data_from is not None:
-            drawn_img_from = np.concatenate((gt_img_data_from, pred_img_data_from), axis=1)
+            drawn_img_weak = np.concatenate((gt_img_data_from, gt_img_data_to), axis=1)
         elif gt_img_data_from is not None:
-            drawn_img_from = gt_img_data_from
+            drawn_img_weak = gt_img_data_from
         else:
-            drawn_img_from = pred_img_data_from
+            drawn_img_weak = pred_img_data_from
 
         if gt_img_data_to is not None and pred_img_data_to is not None:
-            drawn_img_to = np.concatenate((gt_img_data_to, pred_img_data_to), axis=1)
+            drawn_img_strong = np.concatenate((pred_img_data_from, pred_img_data_to), axis=1)
         elif gt_img_data_to is not None:
-            drawn_img_to = gt_img_data_to
+            drawn_img_strong = gt_img_data_to
         else:
-            drawn_img_to = pred_img_data_to
+            drawn_img_strong = pred_img_data_to
 
         if show:
-            if drawn_img_from is not None and drawn_img_to is not None:
-                drawn_img_cat = np.concatenate((drawn_img, drawn_img_from, drawn_img_to), axis=0)
+            if drawn_img_weak is not None and drawn_img_strong is not None:
+                drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
                 self.show(drawn_img_cat, win_name=name, wait_time=wait_time)
                 
             else:
@@ -170,13 +170,13 @@ class CDLocalVisualizer(SegLocalVisualizer):
         # print(drawn_img_from.shape)
         # print(drawn_img_to.shape)
         if out_file is not None:
-            if drawn_img_from is not None and drawn_img_to is not None:
-                drawn_img_cat = np.concatenate((drawn_img, drawn_img_from, drawn_img_to), axis=0)
+            if drawn_img_weak is not None and drawn_img_strong is not None:
+                drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
                 mmcv.imwrite(mmcv.bgr2rgb(drawn_img_cat), out_file)
             else:
                 mmcv.imwrite(mmcv.bgr2rgb(drawn_img), out_file)
         else:
-            self.add_image(name, drawn_img, drawn_img_from, drawn_img_to, step)
+            self.add_image(name, drawn_img, drawn_img_weak, drawn_img_strong, step)
 
     @master_only
     def add_image(self, name: str,
