@@ -90,7 +90,6 @@ class MultiImgPackSegInputs(BaseTransform):
                 return img
             img_seg = _transform_img(results['img_seg'])
             packed_results['inputs_seg'] = img_seg
-
         if 's_img' in results:
             def _transform_img(img):
                 if len(img.shape) < 3:
@@ -105,6 +104,21 @@ class MultiImgPackSegInputs(BaseTransform):
             imgs = [_transform_img(img) for img in results['s_img']]
             imgs = torch.cat(imgs, axis=0) # -> (6, H, W)
             packed_results['inputs_s'] = imgs
+
+        if 's2_img' in results:
+            def _transform_img(img):
+                if len(img.shape) < 3:
+                    img = np.expand_dims(img, -1)
+                if not img.flags.c_contiguous:
+                    img = to_tensor(np.ascontiguousarray(img.transpose(2, 0, 1)))
+                else:
+                    img = img.transpose(2, 0, 1)
+                    img = to_tensor(img).contiguous()
+                return img
+            
+            imgs = [_transform_img(img) for img in results['s2_img']]
+            imgs = torch.cat(imgs, axis=0) # -> (6, H, W)
+            packed_results['inputs_s2'] = imgs
 
         data_sample = SegDataSample()
         if 'gt_seg_map' in results:

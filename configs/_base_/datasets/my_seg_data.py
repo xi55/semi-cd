@@ -29,14 +29,15 @@ train_pipeline = [
     dict(type='MultiImgRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='horizontal'),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='vertical'),
-
+    dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
+    dict(type='MultiImgPhotoMetricDistortion'),
     dict(
         type='RandomOrder',
         transforms=[
             dict(type='RandAugment', aug_space=color_space, aug_num=1),
             dict(type='RandAugment', aug_space=geometric, aug_num=1),
         ]),
-    # dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
+    
     # dict(
     #     type='MultiImgRandomResize',
     #     scale=(512, 512),
@@ -44,7 +45,7 @@ train_pipeline = [
     #     keep_ratio=True
     # ),
     # dict(type='MultiImgExchangeTime', prob=0.5),
-    # dict(type='MultiImgPhotoMetricDistortion'),
+    
     dict(type='MultiImgPackSegInputs')
 ]
 test_pipeline = [

@@ -113,13 +113,14 @@ class SemiHead(BaseDecodeHead):
                  feat_from, feat_to,
                  pseudo_from, pseudo_to, 
                  mask_from, mask_to, 
-                 seg_fp_from, seg_fp_to
+                 seg_fp_from, seg_fp_to,
+                 s2_from, s2_to
                  ):
         seg_from = self.forward(stu_from)
         seg_to = self.forward(stu_to)
 
-        seg_w_from = self.forward(feat_from)
-        seg_w_to = self.forward(feat_to)
+        s2_from = self.forward(s2_from)
+        s2_to = self.forward(s2_to)
 
         seg_fp_from = self.forward(seg_fp_from)
         seg_fp_to = self.forward(seg_fp_to)
@@ -139,8 +140,8 @@ class SemiHead(BaseDecodeHead):
 
         u_preds = [resize(input=u_pred, size=pseudo_from.shape[1:], 
                           mode='bilinear', align_corners=self.align_corners) 
-                          for u_pred in [seg_from, seg_to, seg_fp_from, seg_fp_to]]
-        seg_from, seg_to, seg_fp_from, seg_fp_to = u_preds
+                          for u_pred in [seg_from, seg_to, seg_fp_from, seg_fp_to, s2_from, s2_to]]
+        seg_from, seg_to, seg_fp_from, seg_fp_to, s2_from, s2_to = u_preds
 
 
         if self.sampler is not None:
@@ -181,14 +182,28 @@ class SemiHead(BaseDecodeHead):
             pseudo_to,
             weight=mask_to,
             ignore_index=self.ignore_index)
+        
+        loss_s2_from = self.loss_stu_decode(
+            s2_from,
+            pseudo_from,
+            weight=mask_from,
+            ignore_index=self.ignore_index)
+        
+        loss_s2_to = self.loss_stu_decode(
+            s2_to,
+            pseudo_to,
+            weight=mask_to,
+            ignore_index=self.ignore_index)
 
         # num_classes = seg_to.size()[1]
 
 
         # loss_from_stu = torch.sum((pseudo_from - seg_from)**2) / num_classes
         # loss_to_std = torch.sum((pseudo_to - seg_to)**2) / num_classes
-        loss['loss_stu'] = 0.5 * (loss_from_stu + loss_to_std)
+        loss['loss_s1'] = 0.5 * (loss_from_stu + loss_to_std)
+        loss['loss_s2'] = 0.5 * (loss_s2_from + loss_s2_to)
         loss['loss_fp'] = 0.5 * (loss_from_fp + loss_to_fp)
+        
         # loss['loss_KL'] = 0.3 * loss_ws
         
         return loss

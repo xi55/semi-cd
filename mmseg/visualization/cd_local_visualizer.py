@@ -158,25 +158,25 @@ class CDLocalVisualizer(SegLocalVisualizer):
         else:
             drawn_img_strong = pred_img_data_to
 
-        if show:
-            if drawn_img_weak is not None and drawn_img_strong is not None:
-                drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
-                self.show(drawn_img_cat, win_name=name, wait_time=wait_time)
+        # if show:
+        #     if drawn_img_weak is not None and drawn_img_strong is not None:
+        #         drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
+        #         self.show(drawn_img_cat, win_name=name, wait_time=wait_time)
                 
-            else:
-                self.show(drawn_img, win_name=name, wait_time=wait_time)
+        #     else:
+        #         self.show(drawn_img, win_name=name, wait_time=wait_time)
         # print(name)
         # print(drawn_img.shape)
         # print(drawn_img_from.shape)
         # print(drawn_img_to.shape)
-        if out_file is not None:
-            if drawn_img_weak is not None and drawn_img_strong is not None:
-                drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
-                mmcv.imwrite(mmcv.bgr2rgb(drawn_img_cat), out_file)
-            else:
-                mmcv.imwrite(mmcv.bgr2rgb(drawn_img), out_file)
-        else:
-            self.add_image(name, drawn_img, drawn_img_weak, drawn_img_strong, step)
+        # if out_file is not None:
+        #     if drawn_img_weak is not None and drawn_img_strong is not None:
+        #         drawn_img_cat = np.concatenate((drawn_img, drawn_img_weak, drawn_img_strong), axis=0)
+        #         mmcv.imwrite(mmcv.bgr2rgb(drawn_img_cat), out_file)
+        #     else:
+        #         mmcv.imwrite(mmcv.bgr2rgb(drawn_img), out_file)
+        # else:
+        self.add_image(name, drawn_img, drawn_img_weak, drawn_img_strong, step)
 
     @master_only
     def add_image(self, name: str,

@@ -58,8 +58,13 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
     def extract_feat(self, inputs) -> List[Tensor]:
         """Extract features from images."""
         # `in_channels` is not in the ATTRIBUTE for some backbone CLASS.
+        img_from_s2=None
+        img_to_s2=None
         if isinstance(inputs, Tensor):
-            img_from, img_to, img_seg, img_from_strong, img_to_strong = torch.split(inputs, self.backbone_inchannels, dim=1)
+            if(inputs.shape[1] == 21):
+                img_from, img_to, img_seg, img_from_strong, img_to_strong, img_from_s2, img_to_s2 = torch.split(inputs, self.backbone_inchannels, dim=1)
+            else:
+                img_from, img_to, img_seg, img_from_strong, img_to_strong = torch.split(inputs, self.backbone_inchannels, dim=1)
         elif isinstance(inputs, list):
             img_from, img_to, img_seg = inputs
 
@@ -72,6 +77,13 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         stu_from = self.backbone_teacher(img_from_strong)
         stu_to = self.backbone_teacher(img_to_strong)
 
+
+        if img_from_s2 != None and img_to_s2 != None:
+            s2_from = self.backbone_teacher(img_from_s2)
+            s2_to = self.backbone_teacher(img_to_s2)
+        else:
+            s2_from = None
+            s2_to = None
         # stu_from = self.backbone_student(img_from_strong)
         # stu_to = self.backbone_student(img_to_strong)
 
@@ -94,16 +106,20 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
             stu_from[3] = self.neck_teacher(stu_from[3])
             stu_to[3] = self.neck_teacher(stu_to[3])
 
+            if img_from_s2 != None and img_to_s2 != None:
+                s2_from[3] = self.backbone_teacher(img_from_s2[3])
+                s2_to[3] = self.backbone_teacher(img_to_s2[3])
+
             feat_seg[3] = self.neck_student(feat_seg[3])
 
         # x.append(x_seg)
-        return feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to
+        return feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to
     
     def encode_decode(self, inputs: Tensor,
                       batch_img_metas: List[dict]) -> Tensor:
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to = self.extract_feat(inputs)
+        feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to = self.extract_feat(inputs)
         seg_logits_from = self.decode_teacher.predict(feat_from, batch_img_metas,
                                               self.test_cfg)
         
@@ -159,7 +175,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
             """
             # _, _, img_seg = torch.split(inputs, self.backbone_inchannels, dim=1)
             # self.display1(img_seg[0], data_samples[0].seg_map_path.split('\\')[-1])
-            feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to = self.extract_feat(inputs)
+            feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to = self.extract_feat(inputs)
             pseudo_label_cd, pseudo_from, pseudo_to, mask_from, mask_to, mask_cd = self.get_pseudo([feat_from, feat_to], data_samples)
             # x.append(x_seg)
             # print(len(x))
@@ -171,6 +187,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                                                           pseudo_from, pseudo_to, 
                                                           mask_from, mask_to, 
                                                           feat_fp_from, feat_fp_to, 
+                                                          s2_from, s2_to,
                                                           data_samples)
             losses.update(loss_decode)
 
@@ -194,6 +211,7 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                                    pseudo_from, pseudo_to,
                                    mask_from, mask_to,
                                    feat_fp_from, feat_fp_to,
+                                   s2_from, s2_to,
                                    data_samples: SampleList) -> dict:
         """Run forward function and calculate loss for decode head in
         training."""
@@ -205,7 +223,8 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
                                                 feat_from, feat_to,
                                                 pseudo_from, pseudo_to, 
                                                 mask_from, mask_to, 
-                                                feat_fp_from, feat_fp_to)
+                                                feat_fp_from, feat_fp_to,
+                                                s2_from, s2_to)
         loss_decode.update(loss_stu)
 
         losses.update(add_prefix(loss_decode, 'decode'))

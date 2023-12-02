@@ -575,7 +575,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 i_seg_from_pred = i_seg_from.argmax(dim=0, keepdim=True)
                 i_seg_to_pred = i_seg_to.argmax(dim=0, keepdim=True)
                 i_seg_stu_from_pred = i_seg_stu_from.argmax(dim=0, keepdim=True)
-                i_seg_stu_to_pred = i_seg_stu_from.argmax(dim=0, keepdim=True)
+                i_seg_stu_to_pred = i_seg_stu_to.argmax(dim=0, keepdim=True)
                 # print(torch.unique(i_seg_from_pred))
             else:
                 # print(1)

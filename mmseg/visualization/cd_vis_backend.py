@@ -14,8 +14,8 @@ class CDLocalVisBackend(LocalVisBackend):
     def add_image(self,
                   name: str,
                   image: np.array,
-                  image_from: np.array = None,
-                  image_to: np.array = None,
+                  image_weak: np.array = None,
+                  image_strong: np.array = None,
                   step: int = 0,
                   **kwargs) -> None:
         """Record the image to disk.
@@ -32,15 +32,15 @@ class CDLocalVisBackend(LocalVisBackend):
         os.makedirs(self._img_save_dir, exist_ok=True)
         save_file_name = f'{name}.png'
 
-        if image_from is not None and image_to is not None:
-            assert image_from.dtype == np.uint8 and image_to.dtype == np.uint8
-            drawn_image_from = cv2.cvtColor(image_from, cv2.COLOR_RGB2BGR)
-            drawn_image_to = cv2.cvtColor(image_to, cv2.COLOR_RGB2BGR)
-            for sub_dir in ['binary', 'from', 'to']:
+        if image_weak is not None and image_strong is not None:
+            assert image_weak.dtype == np.uint8 and image_strong.dtype == np.uint8
+            drawn_image_weak = cv2.cvtColor(image_weak, cv2.COLOR_RGB2BGR)
+            drawn_image_strong = cv2.cvtColor(image_strong, cv2.COLOR_RGB2BGR)
+            for sub_dir in ['seg', 'weak', 'strong']:
                 os.makedirs(osp.join(self._img_save_dir, sub_dir), exist_ok=True)
 
-            cv2.imwrite(osp.join(self._img_save_dir, 'binary', save_file_name), drawn_image)
-            cv2.imwrite(osp.join(self._img_save_dir, 'from', save_file_name), drawn_image_from)
-            cv2.imwrite(osp.join(self._img_save_dir, 'to', save_file_name), drawn_image_to)
+            cv2.imwrite(osp.join(self._img_save_dir, 'seg', save_file_name), drawn_image)
+            cv2.imwrite(osp.join(self._img_save_dir, 'weak', save_file_name), drawn_image_weak)
+            cv2.imwrite(osp.join(self._img_save_dir, 'strong', save_file_name), drawn_image_strong)
         else:       
             cv2.imwrite(osp.join(self._img_save_dir, save_file_name), drawn_image)

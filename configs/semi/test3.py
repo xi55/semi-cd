@@ -1,9 +1,10 @@
 _base_ = [
-    '../_base_/models/fpn_r50.py', '../_base_/datasets/my_seg_data.py',
+    '../_base_/models/fpn_swin.py', '../_base_/datasets/my_seg_data.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py']
 crop_size = (512, 512)
 # data_preprocessor = dict(size=crop_size)
-# checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_tiny_patch4_window7_224_20220317-1cdeb081.pth'  # noqa
+checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_small_patch4_window7_224_20220317-7ba6d6dd.pth' # noqa
+# checkpoint_file = '/root/autodl-tmp/logs/test/2/iter_40000.pth'
 data_preprocessor = dict(
     type='DualInputSegDataPreProcessor',
     mean=[123.675, 116.28, 103.53] * 2,
@@ -15,27 +16,26 @@ data_preprocessor = dict(
     seg_pad_val=255,
     test_cfg=dict(size_divisor=32))
 norm_cfg = dict(type='BN', requires_grad=True)
-# checkpoint_file = 'open-mmlab://resnet50_v1c'
+# checkpoint_file = '/root/autodl-tmp/pretrain/iter_160000.pth'
 model = dict(
     type='SLLEncoderDecoder',
     data_preprocessor=data_preprocessor,
-    # backbone=dict(
-        # init_cfg=dict(type='Pretrained', checkpoint=checkpoint_file),
-        # embed_dims=96,
-        # depths=[2, 2, 6, 2],
-        # num_heads=[3, 6, 12, 24],
-        # window_size=7,
-        # use_abs_pos_embed=False,
-        # drop_path_rate=0.3,
-        # patch_norm=True
-        # ),
+    backbone=dict(
+        init_cfg=dict(type='Pretrained', checkpoint=checkpoint_file),
+        embed_dims=96,
+        depths=[2, 2, 18, 2],
+        num_heads=[3, 6, 12, 24],
+        window_size=7,
+        use_abs_pos_embed=False,
+        drop_path_rate=0.3,
+        patch_norm=True),
     neck=dict(
         type='NL_FPN',
-        in_dim=2048,
+        in_dim=768,
         reduction=True),
     decode_head=dict(
         type='SemiHead',
-        in_channels=[256, 512, 1024, 2048], 
+        in_channels=[96, 192, 384, 768], 
         feature_strides=[4, 8, 16, 32],
         num_classes=9, 
         ignore_index = 255,
@@ -43,7 +43,7 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     cd_decode_head=dict(
         type='SSL_CD_Head',
-        in_channels=[2048, 1024, 512, 256], 
+        in_channels=[768, 384, 192, 96],
         in_index=[0, 1, 2, 3],
         channels=512,
         dropout_ratio=0.1,
@@ -89,6 +89,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=2)
+train_dataloader = dict(batch_size=8)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader

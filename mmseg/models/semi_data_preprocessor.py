@@ -242,6 +242,17 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
         else:
             inputs_all = inputs_all
 
+        if 'inputs_s2' in data.keys():
+            inputs_s2 = data['inputs_s2']
+            inputs_s2 = [_inputs_s2.float() for _inputs_s2 in inputs_s2]
+            inputs_s2 = [_input_s2[[2, 1, 0, 5, 4, 3], ...] for _input_s2 in inputs_s2]
+            if self._enable_normalize:
+                inputs_s2 = [(_inputs_s2 - self.mean) / self.std for _inputs_s2 in inputs_s2]
+            
+            inputs_all = [torch.concat([inputs_all[i], inputs_s2[i]], dim=0) for i in range(0, len(inputs_s2))]
+        else:
+            inputs_all = inputs_all
+
         
         if training:
             assert data_samples is not None, ('During training, ',
@@ -273,5 +284,5 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
                     data_sample.set_metainfo({**pad_info})
             else:
                 inputs_all = torch.stack(inputs_all, dim=0)
-        print
+        # print(inputs_all.shape)
         return dict(inputs=inputs_all, data_samples=data_samples)

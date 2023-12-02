@@ -319,16 +319,17 @@ class MultiImgRandomCrop(BaseTransform):
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
         """
-
         crop_bbox = self.crop_bbox(results)
         # crop the image
         imgs = [self.crop(img, crop_bbox) for img in results['img']]
+        s_img = [self.crop(s_img, crop_bbox) for s_img in results['s_img']]
         results['img_seg'] = self.crop(results['img_seg'], crop_bbox)
         # crop semantic seg
         for key in results.get('seg_fields', []):
             results[key] = self.crop(results[key], crop_bbox)
 
         results['img'] = imgs
+        results['s_img'] = s_img
         results['img_shape'] = imgs[0].shape
         return results
 
@@ -400,20 +401,27 @@ class MultiImgRandomRotate(BaseTransform):
         Returns:
             dict: Rotated results.
         """
-        # print(results)
-        # print(results['img'][0].shape)
+        
         # print(results['img'][1].shape)
         # print(results['img_seg'].shape)
         rotate, degree = self.generate_degree()
         if rotate:
-            # region weak aug
-            results['img'] = [
-                mmcv.imrotate(
-                    img,
-                    angle=degree,
-                    border_value=self.pal_val,
-                    center=self.center,
-                    auto_bound=self.auto_bound) for img in results['img']]
+            # region strong-weak aug
+            # results['img'] = [
+            #     mmcv.imrotate(
+            #         img,
+            #         angle=degree,
+            #         border_value=self.pal_val,
+            #         center=self.center,
+            #         auto_bound=self.auto_bound) for img in results['img']]
+            
+            # results['s_img'] = [
+            #     mmcv.imrotate(
+            #         s_img,
+            #         angle=degree,
+            #         border_value=self.pal_val,
+            #         center=self.center,
+            #         auto_bound=self.auto_bound) for s_img in results['s_img']]
             
             results['img_seg'] = mmcv.imrotate(
                     results['img_seg'],
@@ -723,8 +731,11 @@ class MultiImgPhotoMetricDistortion(BaseTransform):
 
         contrast_mode = random.randint(2) \
             if self.consistent_contrast_mode else None
-        results['img'] = [_photo_metric_distortion(img, contrast_mode) \
-                          for img in results['img']]
+        # results['img'] = [_photo_metric_distortion(img, contrast_mode) \
+        #                   for img in results['img']]
+        results['s_img'] = [_photo_metric_distortion(s_img, contrast_mode) \
+                          for s_img in results['s_img']]
+        results['img_seg'] = _photo_metric_distortion(results['img_seg'], contrast_mode)
 
         return results
 
@@ -1592,10 +1603,15 @@ class MultiImgRandomFlip(BaseTransform):
             results['flip'] = True
             results['flip_direction'] = cur_dir
 
-            # flip image
+            # weak_change image
             results['img'] = [
                 mmcv.imflip(img, direction=results['flip_direction'])
                 for img in results['img']
+            ]
+            # strong change image
+            results['s_img'] = [
+                mmcv.imflip(s_img, direction=results['flip_direction'])
+                for s_img in results['s_img']
             ]
             results['img_seg'] = mmcv.imflip(
                     results['img_seg'], direction=results['flip_direction']).copy()
