@@ -2,7 +2,7 @@
 import copy
 import os.path as osp
 from typing import Callable, Dict, List, Optional, Sequence, Union
-
+from itertools import cycle
 import mmengine
 import mmengine.fileio as fileio
 import numpy as np
@@ -209,24 +209,25 @@ CustomDataset的imgs/gt_semantic_seg成对,除了后缀之外都应该相同。�
         """
         data_list = []
 
-        img_dir_from = self.data_prefix.get('img_path_from', None)
-        img_dir_to = self.data_prefix.get('img_path_to', None)
-        img_seg = self.data_prefix.get("img_seg", None)
-        img_seg_label = self.data_prefix.get("img_seg_label", None)
-        ann_dir = self.data_prefix.get('seg_map_path', None)
-
+        img_l_from_path = self.data_prefix.get('img_path_label_from', None)
+        img_l_to_path = self.data_prefix.get('img_path_label_to', None)
+        img_u_from_path = self.data_prefix.get("img_path_unlabel_from", None)
+        img_u_to_path = self.data_prefix.get("img_path_unlabel_to", None)
+        label_path = self.data_prefix.get('label_path', None)
+        # print(f'self.data_prefix: {self.data_prefix}')
+        # print(f'img_path_label_from: {img_l_from_path}')
+        # print(f'img_path_label_to: {img_l_to_path}')
         if osp.isfile(self.ann_file):
 
             lines = mmengine.list_from_file(
                 self.ann_file, backend_args=self.backend_args)
             for line in lines:
                 img_name = line.strip()
-                data_info = dict(img_path=\
-                                 [osp.join(img_dir_from, img_name + self.img_suffix), \
-                                  osp.join(img_dir_to, img_name + self.img_suffix)])
-                if ann_dir is not None:
+                data_info = dict(img_path_l=[osp.join(img_l_from_path, img_name + self.img_suffix), osp.join(img_l_to_path, img_name + self.img_suffix)],
+                                 img_path_u=[osp.join(img_u_from_path, img_name + self.img_suffix), osp.join(img_u_to_path, img_name + self.img_suffix)])
+                if label_path is not None:
                     seg_map = img_name + self.seg_map_suffix
-                    data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
+                    data_info['label_path'] = osp.join(label_path, seg_map)
                 data_info['label_map'] = self.label_map
                 data_info['format_seg_map'] = self.format_seg_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
@@ -234,42 +235,60 @@ CustomDataset的imgs/gt_semantic_seg成对,除了后缀之外都应该相同。�
                 data_list.append(data_info)
         else:
 
-            file_list_from = fileio.list_dir_or_file(
-                    dir_path=img_dir_from,
+            file_l_from = fileio.list_dir_or_file(
+                    dir_path=img_l_from_path,
                     list_dir=False,
                     suffix=self.img_suffix,
                     recursive=True,
                     backend_args=self.backend_args)
-            file_list_to = fileio.list_dir_or_file(
-                    dir_path=img_dir_to,
+            file_l_to = fileio.list_dir_or_file(
+                    dir_path=img_l_to_path,
                     list_dir=False,
                     suffix=self.img_suffix,
                     recursive=True,
                     backend_args=self.backend_args)
+            file_u_from = fileio.list_dir_or_file(
+                    dir_path=img_u_from_path,
+                    list_dir=False,
+                    suffix=self.img_suffix,
+                    recursive=True,
+                    backend_args=self.backend_args)
+            file_u_to = fileio.list_dir_or_file(
+                    dir_path=img_u_to_path,
+                    list_dir=False,
+                    suffix=self.img_suffix,
+                    recursive=True,
+                    backend_args=self.backend_args)
+            
 
-            assert sorted(list(file_list_from)) == sorted(list(file_list_to)), \
+            assert sorted(list(file_l_from)) == sorted(list(file_l_to)), \
                 'The images in `img_path_from` and `img_path_to` are not ' \
                     'one-to-one correspondence'
 
-            for img in fileio.list_dir_or_file(
-                    dir_path=img_dir_from,
-                    list_dir=False,
-                    suffix=self.img_suffix,
-                    recursive=True,
-                    backend_args=self.backend_args):
-                data_info = dict(img_path=\
-                                 [osp.join(img_dir_from, img), \
-                                  osp.join(img_dir_to, img)])
-                if ann_dir is not None:
-                    seg_map = img.replace(self.img_suffix, self.seg_map_suffix)
-                    data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
-                if img_seg is not None:
-                    data_info['img_seg'] = osp.join(img_seg, img)
-                    data_info['img_seg_label'] = osp.join(img_seg_label, seg_map)
+            for img_l, img_u in zip(cycle(
+                    fileio.list_dir_or_file(
+                        dir_path=img_l_from_path,
+                        list_dir=False,
+                        suffix=self.img_suffix,
+                        recursive=True,
+                        backend_args=self.backend_args
+                        )),
+                    fileio.list_dir_or_file(
+                        dir_path=img_u_from_path,
+                        list_dir=False,
+                        suffix=self.img_suffix,
+                        recursive=True,
+                        backend_args=self.backend_args)):
+                data_info = dict(img_path_l=[osp.join(img_l_from_path, img_l), osp.join(img_l_to_path, img_l)],
+                                 img_path_u=[osp.join(img_u_from_path, img_u), osp.join(img_u_to_path, img_u)])
+                if label_path is not None:
+                    seg_map = img_l.replace(self.img_suffix, self.seg_map_suffix)
+                    data_info['label_path'] = osp.join(label_path, seg_map)
+                
                 data_info['label_map'] = self.label_map
                 data_info['format_seg_map'] = self.format_seg_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
                 data_info['seg_fields'] = []
                 data_list.append(data_info)
-            data_list = sorted(data_list, key=lambda x: x['img_path'])
+            data_list = sorted(data_list, key=lambda x: x['img_path_l'])
         return data_list

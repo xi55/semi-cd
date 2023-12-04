@@ -41,23 +41,35 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
         Returns:
             dict: The dict contains loaded image and meta information.
         """
-        
-        filenames = results['img_path']
-        imgs = []
+        print(results)
+        filenames_l = results['img_path_l']
+        filenames_u = results['img_path_u']
+        imgs_l = []
+        imgs_u = []
         try:
-            for filename in filenames:
+            for filename_l, filename_u in zip(filenames_l, filenames_u):
                 if self.file_client_args is not None:
-                    file_client = fileio.FileClient.infer_client(
-                        self.file_client_args, filename)
-                    img_bytes = file_client.get(filename)
+                    file_client_l = fileio.FileClient.infer_client(
+                        self.file_client_args, filename_l)
+                    img_l_bytes = file_client_l.get(filename_l)
+
+                    file_client_u = fileio.FileClient.infer_client(
+                        self.file_client_args, filename_u)
+                    img_u_bytes = file_client_u.get(filename_u)
                 else:
-                    img_bytes = fileio.get(
-                        filename, backend_args=self.backend_args)
-                img = mmcv.imfrombytes(
-                img_bytes, flag=self.color_type, backend=self.imdecode_backend)
+                    img_l_bytes = fileio.get(
+                        filename_l, backend_args=self.backend_args)
+                    img_u_bytes = fileio.get(
+                        filename_u, backend_args=self.backend_args)
+                img_l = mmcv.imfrombytes(
+                    img_l_bytes, flag=self.color_type, backend=self.imdecode_backend)
+                img_u = mmcv.imfrombytes(
+                    img_u_bytes, flag=self.color_type, backend=self.imdecode_backend)
                 if self.to_float32:
-                    img = img.astype(np.float32)
-                imgs.append(img)
+                    img_l = img_l.astype(np.float32)
+                    img_u = img_u.astype(np.float32)
+                imgs_l.append(img_l)
+                imgs_u.append(img_u)
 
             if 'img_seg' in results.keys():
                 if self.file_client_args is not None:
@@ -79,10 +91,10 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
             else:
                 raise e
         
-        results['img'] = imgs
-        results['s_img'] = results['img']
-        results['img_shape'] = imgs[0].shape[:2]
-        results['ori_shape'] = imgs[0].shape[:2]
+        results['imgs_l'] = imgs_l
+        results['imgs_u'] = imgs_u
+        results['img_shape'] = imgs_l[0].shape[:2]
+        results['ori_shape'] = imgs_l[0].shape[:2]
 
         return results
 
@@ -166,7 +178,7 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         """
         
         img_bytes = fileio.get(
-            results['seg_map_path'], backend_args=self.backend_args)
+            results['label_path'], backend_args=self.backend_args)
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='grayscale', # in mmseg: unchanged
             backend=self.imdecode_backend).squeeze().astype(np.uint8)
@@ -219,9 +231,9 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         
         results['gt_seg_map'] = gt_semantic_seg
         results['seg_fields'].append('gt_seg_map')
-
-        results['label_seg_map'] = label_semantic_seg
-        results['seg_fields'].append('label_seg_map')
+        if 'img_seg_label' in results.keys():
+            results['label_seg_map'] = label_semantic_seg
+            results['seg_fields'].append('label_seg_map')
         
 
     def __repr__(self) -> str:

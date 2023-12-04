@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
 from mmseg.registry import DATASETS
-from .basesegdataset import BaseCDDataset
+from .basecddataset import _BaseCDDataset
 
 
 @DATASETS.register_module()
-class LEVIRCDDataset(BaseCDDataset):
+class LEVIRCDDataset(_BaseCDDataset):
     """ISPRS dataset.
 
     In segmentation map annotation for ISPRS, 0 is to ignore index.
@@ -19,13 +19,13 @@ class LEVIRCDDataset(BaseCDDataset):
 
     def __init__(self,
                  img_suffix='.png',
-                 img_suffix2='.png',
                  seg_map_suffix='.png',
+                 data_prefix: dict = dict(img_path_label_from='', img_path_label_to='', img_path_unlabel_from='', img_path_unlabel_to='', label_path=''),
                  reduce_zero_label=False,
                  **kwargs) -> None:
         super().__init__(
             img_suffix=img_suffix,
-            img_suffix2=img_suffix2,
             seg_map_suffix=seg_map_suffix,
+            data_prefix=data_prefix,
             reduce_zero_label=reduce_zero_label,
             **kwargs)
