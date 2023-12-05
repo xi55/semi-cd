@@ -32,18 +32,29 @@ model = dict(
         use_abs_pos_embed=False,
         act_cfg=dict(type='GELU'),
         norm_cfg=backbone_norm_cfg),
+    # decode_head=dict(
+    #     type='FPNHead',
+    #     in_channels=[96, 192, 384, 768],
+    #     feature_strides=[4, 8, 16, 32],
+    #     in_index=[0, 1, 2, 3],
+    #     channels=512,
+    #     dropout_ratio=0.1,
+    #     num_classes=19,
+    #     norm_cfg=norm_cfg,
+    #     align_corners=False,
+    #     loss_decode=dict(
+    #         type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     decode_head=dict(
-        type='FPNHead',
-        in_channels=[96, 192, 384, 768],
-        feature_strides=[4, 8, 16, 32],
+        type='SSL_CD_Head',
+        in_channels=[768, 384, 192, 96],
         in_index=[0, 1, 2, 3],
         channels=512,
         dropout_ratio=0.1,
-        num_classes=19,
+        num_classes=1,
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     # model training and testing settings
     train_cfg=dict(),
     test_cfg=dict(mode='whole'))

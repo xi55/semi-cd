@@ -2,21 +2,51 @@
 dataset_type = 'LEVIRCDDataset'
 data_root = 'E:/LEVIR_CD_SEMI/'
 
-crop_size = (256, 256)
+crop_size = (512, 512)
+
+color_space = [
+    # [dict(type='ColorTransform')],
+    [dict(type='AutoContrast')],
+    [dict(type='Equalize')],
+    [dict(type='Sharpness')],
+    [dict(type='Posterize')],
+    [dict(type='Solarize')],
+    [dict(type='Color')],
+    [dict(type='Contrast')],
+    [dict(type='Brightness')],
+]
+
+geometric = [
+    [dict(type='Rotate')],
+    [dict(type='ShearX')],
+    [dict(type='ShearY')],
+    [dict(type='TranslateX')],
+    [dict(type='TranslateY')],
+]
+
 train_pipeline = [
     dict(type='MultiImgLoadImageFromFile'),
     dict(type='MultiImgLoadAnnotations'),
-    dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
     dict(type='MultiImgRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='horizontal'),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='vertical'),
-    dict(type='MultiImgExchangeTime', prob=0.5),
+    dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
+    dict(type='MultiImgPhotoMetricDistortion'),
     dict(
-        type='MultiImgPhotoMetricDistortion',
-        brightness_delta=10,
-        contrast_range=(0.8, 1.2),
-        saturation_range=(0.8, 1.2),
-        hue_delta=10),
+        type='RandomOrder',
+        transforms=[
+            dict(type='RandAugment', aug_space=color_space, aug_num=1),
+            dict(type='RandAugment', aug_space=geometric, aug_num=1),
+        ]),
+    
+    # dict(
+    #     type='MultiImgRandomResize',
+    #     scale=(512, 512),
+    #     ratio_range=(0.5, 1.5),
+    #     keep_ratio=True
+    # ),
+    # dict(type='MultiImgExchangeTime', prob=0.5),
+    
     dict(type='MultiImgPackSegInputs')
 ]
 test_pipeline = [
@@ -31,7 +61,7 @@ img_ratios = [0.75, 1.0, 1.25]
 tta_pipeline = [
     dict(type='MultiImgLoadImageFromFile', backend_args=None),
     dict(
-        type='TestTimeAug',
+        # type='TestTimeAug',
         transforms=[
             [
                 dict(type='MultiImgResize', scale_factor=r, keep_ratio=True)
@@ -86,10 +116,10 @@ test_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             label_path='val/label',
-            label_img_from_path='val/val_l/A', 
-            label_img_to_path='val/val_l/B',
-            unlabel_img_from_path='val/val_u/A', 
-            unlabel_img_to_path='val/val_u/B'),
+            img_path_label_from='val/val_l/A', 
+            img_path_label_to='val/val_l/B',
+            img_path_unlabel_from='val/val_u/A', 
+            img_path_unlabel_to='val/val_u/B'),
         pipeline=test_pipeline))
 
 val_evaluator = dict(type='mmseg.IoUMetric', iou_metrics=['mFscore', 'mIoU'])

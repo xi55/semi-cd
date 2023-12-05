@@ -168,31 +168,31 @@ class CDVisualizationHook(SegVisualizationHook):
         if self.every_n_inner_iters(batch_idx, self.interval):
 
             for output in outputs:
-                img_path = data_batch['data_samples'][0].img_path[0]
-                img_from_to = []
-                window_name = osp.basename(img_path).split('.')[0]
+                img_path_l = data_batch['data_samples'][0].img_path_l[0]
+                img_l_from_to = []
+                window_name = osp.basename(img_path_l).split('.')[0]
                 if self.img_shape is not None:
                     assert len(self.img_shape) == 3, \
                         '`img_shape` should be (H, W, C)'
                 else:
-                    img_bytes = fileio.get(
-                        img_path, backend_args=self.backend_args)
-                    img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
-                    self.img_shape = img.shape
+                    img_l_bytes = fileio.get(
+                        img_path_l, backend_args=self.backend_args)
+                    img_l = mmcv.imfrombytes(img_l_bytes, channel_order='rgb')
+                    self.img_shape = img_l.shape
 
                 if self.draw_on_from_to_img:
                     # for semantic change detection
-                    for _img_path in data_batch['data_samples'][0].img_path:
-                        _img_bytes = fileio.get(
-                            _img_path, backend_args=self.backend_args)
-                        _img = mmcv.imfrombytes(_img_bytes, channel_order='rgb')
-                        img_from_to.append(_img)
+                    for _img_l_path in data_batch['data_samples'][0].img_path_l:
+                        _img_l_bytes = fileio.get(
+                            _img_l_path, backend_args=self.backend_args)
+                        _img_l = mmcv.imfrombytes(_img_l_bytes, channel_order='rgb')
+                        img_l_from_to.append(_img_l)
                         
                 img = np.zeros(self.img_shape)
                 self._visualizer.add_datasample(
                     window_name,
                     img,
-                    img_from_to,
+                    img_l_from_to,
                     data_batch=data_batch,
                     data_sample=output,
                     show=self.show,

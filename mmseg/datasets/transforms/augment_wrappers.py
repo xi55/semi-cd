@@ -253,15 +253,15 @@ class RandAugment(RandomChoice):
         Returns:
             dict: Result dict with RandAugment.
         """
-        s2_results = {'s_img': results['s_img'], 'img_shape': results['img_shape']}
+        # s2_results = {'s_img': results['s_img'], 'img_shape': results['img_shape']}
         # s2_results['s_img'] = results['s_img']
         # print(results)
         # print(s2_results)
         for idx in self.random_pipeline_index():
             results = self.transforms[idx](results)
-        for idx in self.random_pipeline_index():
-            s2_results = self.transforms[idx](s2_results)
-        results.update({'s2_img': s2_results['s_img']})
+        # for idx in self.random_pipeline_index():
+        #     s2_results = self.transforms[idx](s2_results)
+        # results.update({'s2_img': s2_results['s_img']})
         return results
 
     def __repr__(self) -> str:

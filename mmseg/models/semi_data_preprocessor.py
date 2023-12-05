@@ -210,50 +210,30 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
             Dict: Data in the same format as the model input.
         """
         data = self.cast_data(data)  # type: ignore
-        inputs = data['inputs']
-        
+        inputs_l = data['inputs_l']
+        inputs_u = data['inputs_u']
+        inputs_u_s = data.get('inputs_u_s', None)
         data_samples = data.get('data_samples', None)
         # TODO: whether normalize should be after stack_batch
-        if self.channel_conversion and inputs[0].size(0) == 6:
-            inputs = [_input[[2, 1, 0, 5, 4, 3], ...] for _input in inputs]
-
-        inputs = [_input.float() for _input in inputs]
+        if self.channel_conversion and inputs_l[0].size(0) == 6:
+            inputs_l = [_input_l[[2, 1, 0, 5, 4, 3], ...] for _input_l in inputs_l]
+        inputs_l = [_input_l.float() for _input_l in inputs_l]
         if self._enable_normalize:
-            inputs = [(_input - self.mean) / self.std for _input in inputs]
+            inputs_l = [(_input_l - self.mean) / self.std for _input_l in inputs_l]
 
-        if 'inputs_seg' in data.keys():
-            inputs_seg = data['inputs_seg']
-            inputs_seg = [_inputs_seg.float() for _inputs_seg in inputs_seg]
-            if self._enable_normalize:
-                inputs_seg = [(_inputs_seg - self.mean[:3]) / self.std[:3] for _inputs_seg in inputs_seg]
-            inputs_all = [torch.concat([inputs[i], inputs_seg[i]], dim=0) for i in range(0, len(inputs))]
-        else:
-            inputs_all = inputs
+        if self.channel_conversion and inputs_u[0].size(0) == 6:
+            inputs_u = [_input_u[[2, 1, 0, 5, 4, 3], ...] for _input_u in inputs_u]
+        inputs_u = [_input_u.float() for _input_u in inputs_u]
+        if self._enable_normalize:
+            inputs_u = [(_input_u - self.mean) / self.std for _input_u in inputs_u]
 
-
-        if 'inputs_s' in data.keys():
-            inputs_s = data['inputs_s']
-            inputs_s = [_inputs_s.float() for _inputs_s in inputs_s]
-            inputs_s = [_input_s[[2, 1, 0, 5, 4, 3], ...] for _input_s in inputs_s]
-            if self._enable_normalize:
-                inputs_s = [(_inputs_s - self.mean) / self.std for _inputs_s in inputs_s]
+        if self.channel_conversion and inputs_u_s[0].size(0) == 6:
+            inputs_u_s = [_input_u_s[[2, 1, 0, 5, 4, 3], ...] for _input_u_s in inputs_u_s]
+        inputs_u_s = [_input_u_s.float() for _input_u_s in inputs_u_s]
+        if self._enable_normalize:
+            inputs_u_s = [(_input_u_s - self.mean) / self.std for _input_u_s in inputs_u_s]
             
-            inputs_all = [torch.concat([inputs_all[i], inputs_s[i]], dim=0) for i in range(0, len(inputs_s))]
-        else:
-            inputs_all = inputs_all
-
-        if 'inputs_s2' in data.keys():
-            inputs_s2 = data['inputs_s2']
-            inputs_s2 = [_inputs_s2.float() for _inputs_s2 in inputs_s2]
-            inputs_s2 = [_input_s2[[2, 1, 0, 5, 4, 3], ...] for _input_s2 in inputs_s2]
-            if self._enable_normalize:
-                inputs_s2 = [(_inputs_s2 - self.mean) / self.std for _inputs_s2 in inputs_s2]
-            
-            inputs_all = [torch.concat([inputs_all[i], inputs_s2[i]], dim=0) for i in range(0, len(inputs_s2))]
-        else:
-            inputs_all = inputs_all
-
-        
+        inputs_all = [torch.concat([inputs_l[i], inputs_u[i], inputs_u_s[i]], dim=0) for i in range(0, len(inputs_l))]
         if training:
             assert data_samples is not None, ('During training, ',
                                               '`data_samples` must be define.')
@@ -269,7 +249,7 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
                 inputs_all, data_samples = self.batch_augments(
                     inputs_all, data_samples)
         else:
-            assert len(inputs) == 1, (
+            assert len(inputs_all) == 1, (
                 'Batch inference is not support currently, '
                 'as the image size might be different in a batch')
             # pad images when testing

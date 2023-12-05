@@ -76,15 +76,16 @@ class IoUMetric(BaseMetric):
         """
         num_classes = len(self.dataset_meta['classes'])
         for data_sample in data_samples:
-            pred_label = data_sample['pred_sem_seg']['data'].squeeze()
             # print(data_sample.keys())
+            # print(data_batch['data_samples'][0].keys)
+            pred_label = data_sample['i_cd_pred']['data'].squeeze()
             # print(torch.unique(data_sample['pred_sem_seg']['data']))
             # print(torch.unique(data_sample['gt_sem_seg']['data']))
             
             # format_only always for test dataset without ground truth
-            if not self.format_only:
+            if not self.format_only: #true
                 # print(torch.unique(data_sample['label_seg_map']['data']))
-                label = data_batch['data_samples'][0].label_seg_map.data
+                label = data_batch['data_samples'][0].gt_sem_seg.data
                 label = label.squeeze().to(pred_label)
                 self.results.append(
                     self.intersect_and_union(pred_label, label, num_classes,

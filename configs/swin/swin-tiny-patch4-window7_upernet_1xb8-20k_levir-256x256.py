@@ -2,13 +2,18 @@ _base_ = [
     '../_base_/models/upernet_swin.py', '../_base_/datasets/levir_256x256.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_20k.py'
 ]
-crop_size = (256, 256)
+crop_size = (512, 512)
 norm_cfg = dict(type='BN', requires_grad=True)
 data_preprocessor = dict(
-    size=crop_size,
-    type='SegDataPreProcessor',
-    mean=[123.675, 116.28, 103.53, 123.675, 116.28, 103.53],
-    std=[58.395, 57.12, 57.375, 58.395, 57.12, 57.375])
+    type='DualInputSegDataPreProcessor',
+    mean=[123.675, 116.28, 103.53] * 2,
+    std=[58.395, 57.12, 57.375] * 2,
+    # size=crop_size,
+    bgr_to_rgb=True,
+    size_divisor=32,
+    pad_val=0,
+    seg_pad_val=255,
+    test_cfg=dict(size_divisor=32))
 
 model = dict(
     data_preprocessor=data_preprocessor,
@@ -21,8 +26,17 @@ model = dict(
         use_abs_pos_embed=False,
         drop_path_rate=0.3,
         patch_norm=True),
-    decode_head=dict(in_channels=[96, 192, 384, 768], num_classes=2),
-    auxiliary_head=dict(in_channels=384, num_classes=2))
+    decode_head=dict(
+        type='SSL_CD_Head',
+        in_channels=[768, 384, 192, 96],
+        in_index=[0, 1, 2, 3],
+        channels=512,
+        dropout_ratio=0.1,
+        num_classes=1,
+        norm_cfg=norm_cfg,
+        align_corners=False,
+        loss_decode=dict(
+            type='DiceLoss', use_sigmoid=True, loss_weight=1.0)))
 
 # AdamW optimizer, no weight decay for position embedding & layer norm
 # in backbone

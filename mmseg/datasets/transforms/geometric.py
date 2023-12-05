@@ -285,12 +285,12 @@ class ShearX(GeomTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Shear the image horizontally."""
-        results['s_img'] = [mmcv.imshear(
+        results['imgs_u_s'] = [mmcv.imshear(
             img,
             mag,
             direction='horizontal',
             border_value=self.img_border_value,
-            interpolation=self.interpolation) for img in results['s_img']]
+            interpolation=self.interpolation) for img in results['imgs_u_s']]
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Shear the masks horizontally."""
@@ -399,12 +399,12 @@ class ShearY(GeomTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Shear the image vertically."""
-        results['s_img'] = [mmcv.imshear(
+        results['imgs_u_s'] = [mmcv.imshear(
             img,
             mag,
             direction='vertical',
             border_value=self.img_border_value,
-            interpolation=self.interpolation) for img in results['s_img']]
+            interpolation=self.interpolation) for img in results['imgs_u_s']]
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Shear the masks vertically."""
@@ -509,11 +509,11 @@ class Rotate(GeomTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Rotate the image."""
-        results['s_img'] = [mmcv.imrotate(
+        results['imgs_u_s'] = [mmcv.imrotate(
             img,
             mag,
             border_value=self.img_border_value,
-            interpolation=self.interpolation) for img in results['s_img']]
+            interpolation=self.interpolation) for img in results['imgs_u_s']]
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Rotate the masks."""
@@ -615,12 +615,12 @@ class TranslateX(GeomTransform):
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image horizontally."""
         mag = int(results['img_shape'][1] * mag)
-        results['s_img'] = [mmcv.imtranslate(
+        results['imgs_u_s'] = [mmcv.imtranslate(
             img,
             mag,
             direction='horizontal',
             border_value=self.img_border_value,
-            interpolation=self.interpolation) for img in results['s_img']]
+            interpolation=self.interpolation) for img in results['imgs_u_s']]
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Translate the masks horizontally."""
@@ -726,12 +726,12 @@ class TranslateY(GeomTransform):
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image vertically."""
         mag = int(results['img_shape'][0] * mag)
-        results['s_img'] = [mmcv.imtranslate(
+        results['imgs_u_s'] = [mmcv.imtranslate(
             img,
             mag,
             direction='vertical',
             border_value=self.img_border_value,
-            interpolation=self.interpolation) for img in results['s_img']]
+            interpolation=self.interpolation) for img in results['imgs_u_s']]
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Translate masks vertically."""

@@ -58,88 +58,55 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
     def extract_feat(self, inputs) -> List[Tensor]:
         """Extract features from images."""
         # `in_channels` is not in the ATTRIBUTE for some backbone CLASS.
-        img_from_s2=None
-        img_to_s2=None
-        if isinstance(inputs, Tensor):
-            if(inputs.shape[1] == 21):
-                img_from, img_to, img_seg, img_from_strong, img_to_strong, img_from_s2, img_to_s2 = torch.split(inputs, self.backbone_inchannels, dim=1)
-            else:
-                img_from, img_to, img_seg, img_from_strong, img_to_strong = torch.split(inputs, self.backbone_inchannels, dim=1)
-        elif isinstance(inputs, list):
-            img_from, img_to, img_seg = inputs
+        img_s_from=None
+        img_s_to=None
+        img_l_from, img_l_to, img_u_from, img_u_to, img_s_from, img_s_to = torch.split(inputs, self.backbone_inchannels, dim=1)
 
-        feat_from = self.backbone_teacher(img_from)
-        feat_to = self.backbone_teacher(img_to)
+        feat_w_from = self.backbone_teacher(img_u_from)
+        feat_w_to = self.backbone_teacher(img_u_to)
 
-        feat_fp_from = [nn.Dropout2d(0.5)(f) for f in feat_from]
-        feat_fp_to = [nn.Dropout2d(0.5)(t) for t in feat_to]
+        feat_fp_from = [nn.Dropout2d(0.5)(f) for f in feat_w_from]
+        feat_fp_to = [nn.Dropout2d(0.5)(t) for t in feat_w_to]
 
-        stu_from = self.backbone_teacher(img_from_strong)
-        stu_to = self.backbone_teacher(img_to_strong)
+        feat_s_from = self.backbone_teacher(img_s_from)
+        feat_s_to = self.backbone_teacher(img_s_to)
 
-
-        if img_from_s2 != None and img_to_s2 != None:
-            s2_from = self.backbone_teacher(img_from_s2)
-            s2_to = self.backbone_teacher(img_to_s2)
-        else:
-            s2_from = None
-            s2_to = None
-        # stu_from = self.backbone_student(img_from_strong)
-        # stu_to = self.backbone_student(img_to_strong)
-
-        feat_seg = self.backbone_student(img_seg)
+        feat_l_from = self.backbone_student(img_l_from)
+        feat_l_to = self.backbone_student(img_l_to)
 
         if self.with_neck:
-            if isinstance(feat_from, tuple):
-                feat_from = list(feat_from)
-                feat_to = list(feat_to)
-                stu_from = list(stu_from)
-                stu_to = list(stu_to)
-                feat_seg = list(feat_seg)
-
-            feat_from[3] = self.neck_teacher(feat_from[3])
-            feat_to[3] = self.neck_teacher(feat_to[3])
+            feat_w_from[3] = self.neck_teacher(feat_w_from[3])
+            feat_w_to[3] = self.neck_teacher(feat_w_to[3])
             
             feat_fp_from[3] = self.neck_teacher(feat_fp_from[3])
             feat_fp_to[3] = self.neck_teacher(feat_fp_to[3])
 
-            stu_from[3] = self.neck_teacher(stu_from[3])
-            stu_to[3] = self.neck_teacher(stu_to[3])
+            feat_s_from[3] = self.neck_teacher(feat_s_from[3])
+            feat_s_to[3] = self.neck_teacher(feat_s_to[3])
 
-            if img_from_s2 != None and img_to_s2 != None:
-                s2_from[3] = self.backbone_teacher(img_from_s2[3])
-                s2_to[3] = self.backbone_teacher(img_to_s2[3])
-
-            feat_seg[3] = self.neck_student(feat_seg[3])
+            feat_l_from[3] = self.neck_student(feat_l_from[3])
+            feat_l_to[3] = self.neck_student(feat_l_to[3])
 
         # x.append(x_seg)
-        return feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to
+        return feat_w_from, feat_w_to, feat_fp_from, feat_fp_to, feat_s_from, feat_s_to, feat_l_from, feat_l_to
     
     def encode_decode(self, inputs: Tensor,
                       batch_img_metas: List[dict]) -> Tensor:
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to = self.extract_feat(inputs)
-        seg_logits_from = self.decode_teacher.predict(feat_from, batch_img_metas,
-                                              self.test_cfg)
-        
-        seg_logits_to = self.decode_teacher.predict(feat_to, batch_img_metas,
+        feat_w_from, feat_w_to, feat_fp_from, feat_fp_to, feat_s_from, feat_s_to, feat_l_from, feat_l_to = self.extract_feat(inputs)
+        w_logits_cd = self.decode_teacher.predict([feat_w_from, feat_w_to], batch_img_metas,
                                               self.test_cfg)
 
-        seg_logits_stu_from = self.decode_teacher.predict(stu_from, batch_img_metas,
-                                                    self.test_cfg)
-        seg_logits_stu_to = self.decode_teacher.predict(stu_to, batch_img_metas,
+        fp_logits_cd = self.decode_teacher.predict([feat_fp_from, feat_fp_to], batch_img_metas,
                                                     self.test_cfg)
 
-        seg_logits_seg = self.decode_student.predict(feat_seg, batch_img_metas,
-                                                    self.test_cfg)
-        
-        seg_logits_cd = self.cd_decode_head.predict([feat_from, feat_to], batch_img_metas,
+        l_logits_cd = self.decode_student.predict([feat_l_from, feat_l_to], batch_img_metas,
                                                     self.test_cfg)
         # print(batch_img_metas[0].keys())
         # self.display1(seg_logits_cd[0], batch_img_metas[0]['seg_map_path'].split('\\')[-1])
         
-        return [seg_logits_from, seg_logits_to, seg_logits_seg, seg_logits_cd, seg_logits_stu_from, seg_logits_stu_to]
+        return [w_logits_cd, fp_logits_cd, l_logits_cd]
 
     def display1(self, affinity, s):
         affinity = affinity.permute(1, 2, 0)
@@ -148,18 +115,6 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
         plt.title(s)
         plt.colorbar()
         plt.show()
-
-    def _stack_batch_from(self, batch_data_samples: SampleList) -> Tensor:
-        gt_semantic_segs = [
-            data_sample.i_seg_from_pred.data for data_sample in batch_data_samples
-        ]
-        return torch.stack(gt_semantic_segs, dim=0)
-    
-    def _stack_batch_to(self, batch_data_samples: SampleList) -> Tensor:
-        gt_semantic_segs = [
-            data_sample.i_seg_to_pred.data for data_sample in batch_data_samples
-        ]
-        return torch.stack(gt_semantic_segs, dim=0)
 
     def loss(self, inputs: Tensor, data_samples: SampleList) -> dict:
             """Calculate losses from a batch of inputs and data samples.
@@ -173,21 +128,15 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
             Returns:
                 dict[str, Tensor]: a dictionary of loss components
             """
-            # _, _, img_seg = torch.split(inputs, self.backbone_inchannels, dim=1)
-            # self.display1(img_seg[0], data_samples[0].seg_map_path.split('\\')[-1])
-            feat_from, feat_to, feat_seg, stu_from, stu_to, feat_fp_from, feat_fp_to, s2_from, s2_to = self.extract_feat(inputs)
-            pseudo_label_cd, pseudo_from, pseudo_to, mask_from, mask_to, mask_cd = self.get_pseudo([feat_from, feat_to], data_samples)
-            # x.append(x_seg)
-            # print(len(x))
+            feat_w_from, feat_w_to, feat_fp_from, feat_fp_to, feat_s_from, feat_s_to, feat_l_from, feat_l_to = self.extract_feat(inputs)
+            pseudo_label, mask = self.get_pseudo([feat_w_from, feat_w_to], data_samples)
             losses = dict()
 
-            loss_decode = self._decode_head_forward_train(feat_seg, 
-                                                          stu_from, stu_to, 
-                                                          feat_from, feat_to,
-                                                          pseudo_from, pseudo_to, 
-                                                          mask_from, mask_to, 
-                                                          feat_fp_from, feat_fp_to, 
-                                                          s2_from, s2_to,
+            loss_decode = self._decode_head_forward_train(feat_w_from, feat_w_to,
+                                                          feat_fp_from, feat_fp_to,
+                                                          feat_s_from, feat_s_to,
+                                                          feat_l_from, feat_l_to, 
+                                                          pseudo_label, mask,
                                                           data_samples)
             losses.update(loss_decode)
 
@@ -197,34 +146,29 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
             #     losses.update(loss_cd_decode)
             # loss_cd_decode = self._cd_decode_head_forward_train([feat_from, feat_to], pseudo_label_cd, mask_cd, data_samples)
             # losses.update(loss_cd_decode)
-            if self.with_auxiliary_head:
-                loss_aux = self._auxiliary_head_forward_train([feat_from, feat_to, feat_seg], data_samples)
-                losses.update(loss_aux)
+            # if self.with_auxiliary_head:
+            #     loss_aux = self._auxiliary_head_forward_train([feat_from, feat_to, feat_seg], data_samples)
+            #     losses.update(loss_aux)
 
             return losses
     
     def _decode_head_forward_train(self, 
-                                   inputs: List[Tensor], 
-                                   stu_from: List[Tensor], 
-                                   stu_to: List[Tensor],
-                                   feat_from, feat_to,
-                                   pseudo_from, pseudo_to,
-                                   mask_from, mask_to,
-                                   feat_fp_from, feat_fp_to,
-                                   s2_from, s2_to,
+                                   feat_w_from: Tensor, feat_w_to: Tensor,
+                                   feat_fp_from: Tensor, feat_fp_to: Tensor,
+                                   feat_s_from: Tensor, feat_s_to: Tensor,
+                                   feat_l_from: Tensor, feat_l_to: Tensor, 
+                                   pseudo_label: Tensor, mask: Tensor,
                                    data_samples: SampleList) -> dict:
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
         
-        loss_decode = self.decode_student.loss(inputs, data_samples,
+        loss_decode = self.decode_student.loss([feat_l_from, feat_l_to], data_samples,
                                             self.train_cfg)
-        loss_stu = self.decode_teacher.loss_stu(stu_from, stu_to, 
-                                                feat_from, feat_to,
-                                                pseudo_from, pseudo_to, 
-                                                mask_from, mask_to, 
+        loss_stu = self.decode_teacher.loss_stu(feat_w_from, feat_w_to,
                                                 feat_fp_from, feat_fp_to,
-                                                s2_from, s2_to)
+                                                feat_s_from, feat_s_to,
+                                                pseudo_label, mask)
         loss_decode.update(loss_stu)
 
         losses.update(add_prefix(loss_decode, 'decode'))
@@ -233,28 +177,15 @@ class SLLEncoderDecoder(SllSemiEncoderDecoder):
 
     @torch.no_grad()
     def get_pseudo(self, inputs, data_samples: SampleList):
-        feat_from, feat_to = inputs
-        seg_logits_from = self.decode_teacher.predict(feat_from, data_samples,
-                                              self.test_cfg)
-        
-        seg_logits_to = self.decode_teacher.predict(feat_to, data_samples,
-                                              self.test_cfg)
-        pseudo_label_from = torch.softmax(seg_logits_from.detach(), dim=1)
-        pseudo_label_to = torch.softmax(seg_logits_to.detach(), dim=1)
+        feat_w_from, feat_w_to = inputs
+        w_logits_cd = self.decode_teacher.predict([feat_w_from, feat_w_to], data_samples, self.test_cfg)
+        # print(w_logits_cd.shape)
+        # pseudo_label_cd = w_logits_cd.sigmoid()
+        # pseudo_label = (pseudo_label_cd > 0.5).to(pseudo_label_cd)
 
-        max_label_cd, pseudo_label_cd = torch.max(torch.abs(pseudo_label_to - pseudo_label_from), dim=1)
-        max_label_from, pseudo_label_from = torch.max(pseudo_label_from, dim=1)
-        max_label_to, pseudo_label_to = torch.max(pseudo_label_to, dim=1)
-        pseudo_label = torch.logical_xor(pseudo_label_from, pseudo_label_to).int() #t1，t2时序图异或得到变化伪标签
-        mask_from = max_label_from.ge(0.95).float()
-        mask_to = max_label_to.ge(0.95).float()
-        mask_cd = max_label_cd.ge(0.5).int()
-
-
-        # self.display1(pseudo_label_from[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # self.display1(pseudo_label_to[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # self.display1(mask_cd[0], data_samples[0].seg_map_path.split('\\')[-1])
-        # print(torch.unique(max_label_cd))
-        # pseudo_label = (pseudo_label == pseudo_label_cd).int()
-        return mask_cd, pseudo_label_from, pseudo_label_to, mask_from, mask_to, None
+        pseudo_label_cd = torch.softmax(w_logits_cd.detach(), dim=1)
+        pseudo_mask, pseudo_label = torch.max(pseudo_label_cd, dim=1)
+        mask = pseudo_mask.ge(0.95).float()
+        # print(torch.unique(mask))
+        return pseudo_label, mask
 

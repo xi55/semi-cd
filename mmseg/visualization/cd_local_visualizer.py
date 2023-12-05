@@ -81,82 +81,73 @@ class CDLocalVisualizer(SegLocalVisualizer):
         # print(data_batch.keys())
         # print(data_batch['data_samples'][0].keys())
 
-        if draw_gt and data_batch['data_samples'][0] is not None and 'label_seg_map' in data_batch['data_samples'][0]:
+        if draw_gt and data_batch['data_samples'][0] is not None and 'gt_sem_seg' in data_batch['data_samples'][0]:
             gt_img_data = image
             assert classes is not None, 'class information is ' \
                                         'not provided when ' \
                                         'visualizing change ' \
                                         'deteaction results.'
-            gt_img_data = self._draw_sem_seg(gt_img_data,
-                                             data_batch['data_samples'][0].label_seg_map, classes,
+            gt_img_l_data = self._draw_sem_seg(gt_img_data,
+                                             data_batch['data_samples'][0].gt_sem_seg, classes,
                                              palette)
-        if draw_gt and data_sample is not None and 'i_seg_from_pred' in data_sample \
-            and 'i_seg_to_pred' in data_sample:
-            if exist_img_from_to:
-                gt_img_data_from = image_from_to[0]
-                gt_img_data_to = image_from_to[1]
-            else:
-                gt_img_data_from = np.zeros_like(image)
-                gt_img_data_to = np.zeros_like(image)
+        if draw_gt and data_sample is not None and 'i_cd_pred' in data_sample:
             assert classes is not None, 'class information is ' \
                                         'not provided when ' \
                                         'visualizing change ' \
                                         'deteaction results.'
-            gt_img_data_from = self._draw_sem_seg(gt_img_data_from,
-                                             data_sample.i_seg_from_pred, classes,
-                                             palette)
-            gt_img_data_to = self._draw_sem_seg(gt_img_data_to,
-                                             data_sample.i_seg_to_pred, classes,
+            img_data = image
+            pred_img_l_data = self._draw_sem_seg(img_data,
+                                             data_sample.i_cd_pred, classes,
                                              palette)
 
-        if (draw_pred and data_sample is not None
-                and 'pred_sem_seg' in data_sample):
-            pred_img_data = image
-            assert classes is not None, 'class information is ' \
-                                        'not provided when ' \
-                                        'visualizing semantic ' \
-                                        'segmentation results.'
-            pred_img_data = self._draw_sem_seg(pred_img_data,
-                                               data_sample.pred_sem_seg,
-                                               classes, palette)
+        # if (draw_pred and data_sample is not None
+        #         and 'pred_sem_seg' in data_sample):
+        #     pred_img_data = image
+        #     assert classes is not None, 'class information is ' \
+        #                                 'not provided when ' \
+        #                                 'visualizing semantic ' \
+        #                                 'segmentation results.'
+        #     pred_img_data = self._draw_sem_seg(pred_img_data,
+        #                                        data_sample.pred_sem_seg,
+        #                                        classes, palette)
             
-        if (draw_pred and data_sample is not None and 'i_seg_stu_from_pred' in data_sample \
-            and 'i_seg_stu_to_pred' in data_sample):
-            if exist_img_from_to:
-                pred_img_data_from = image_from_to[0]
-                pred_img_data_to = image_from_to[1]
-            else:
-                pred_img_data_from = np.zeros_like(image)
-                pred_img_data_to = np.zeros_like(image)
-            assert classes is not None, 'class information is ' \
-                                        'not provided when ' \
-                                        'visualizing change ' \
-                                        'deteaction results.'
-            pred_img_data_from = self._draw_sem_seg(pred_img_data_from,
-                                             data_sample.i_seg_stu_from_pred, classes, palette)
-            pred_img_data_to = self._draw_sem_seg(pred_img_data_to,
-                                             data_sample.i_seg_stu_to_pred, classes, palette)
+        # if (draw_pred and data_sample is not None and 'i_seg_stu_from_pred' in data_sample \
+        #     and 'i_seg_stu_to_pred' in data_sample):
+        #     if exist_img_from_to:
+        #         pred_img_data_from = image_from_to[0]
+        #         pred_img_data_to = image_from_to[1]
+        #     else:
+        #         pred_img_data_from = np.zeros_like(image)
+        #         pred_img_data_to = np.zeros_like(image)
+        #     assert classes is not None, 'class information is ' \
+        #                                 'not provided when ' \
+        #                                 'visualizing change ' \
+        #                                 'deteaction results.'
+        #     pred_img_data_from = self._draw_sem_seg(pred_img_data_from,
+        #                                      data_sample.i_seg_stu_from_pred, classes, palette)
+        #     pred_img_data_to = self._draw_sem_seg(pred_img_data_to,
+        #                                      data_sample.i_seg_stu_to_pred, classes, palette)
 
-        if gt_img_data is not None and pred_img_data is not None:
-            drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
-        elif gt_img_data is not None:
-            drawn_img = gt_img_data
+        if gt_img_l_data is not None and pred_img_l_data is not None:
+            drawn_img = np.concatenate((gt_img_l_data, pred_img_l_data), axis=1)
+        elif gt_img_l_data is not None:
+            drawn_img = gt_img_l_data
         else:
-            drawn_img = pred_img_data
+            drawn_img = pred_img_l_data
 
-        if gt_img_data_from is not None and pred_img_data_from is not None:
-            drawn_img_weak = np.concatenate((gt_img_data_from, gt_img_data_to), axis=1)
-        elif gt_img_data_from is not None:
-            drawn_img_weak = gt_img_data_from
-        else:
-            drawn_img_weak = pred_img_data_from
+        # if gt_img_data_from is not None and pred_img_data_from is not None:
+        #     drawn_img_weak = np.concatenate((gt_img_data_from, gt_img_data_to), axis=1)
+        # elif gt_img_data_from is not None:
+        #     drawn_img_weak = gt_img_data_from
+        # else:
+        #     drawn_img_weak = pred_img_data_from
 
-        if gt_img_data_to is not None and pred_img_data_to is not None:
-            drawn_img_strong = np.concatenate((pred_img_data_from, pred_img_data_to), axis=1)
-        elif gt_img_data_to is not None:
-            drawn_img_strong = gt_img_data_to
-        else:
-            drawn_img_strong = pred_img_data_to
+        # if gt_img_data_to is not None and pred_img_data_to is not None:
+        #     drawn_img_strong = np.concatenate((pred_img_data_from, pred_img_data_to), axis=1)
+        # elif gt_img_data_to is not None:
+        #     drawn_img_strong = gt_img_data_to
+        # else:
+        #     drawn_img_strong = pred_img_data_to
 
         # if show:
         #     if drawn_img_weak is not None and drawn_img_strong is not None:
@@ -176,7 +167,7 @@ class CDLocalVisualizer(SegLocalVisualizer):
         #     else:
         #         mmcv.imwrite(mmcv.bgr2rgb(drawn_img), out_file)
         # else:
-        self.add_image(name, drawn_img, drawn_img_weak, drawn_img_strong, step)
+        self.add_image(name, drawn_img, None, None, step)
 
     @master_only
     def add_image(self, name: str,

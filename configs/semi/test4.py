@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/fpn_swin.py', '../_base_/datasets/levir_cd_semi.py',
+    '../_base_/models/changer_mit-b0.py', '../_base_/datasets/levir_cd_semi.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py']
 crop_size = (512, 512)
 # data_preprocessor = dict(size=crop_size)
@@ -21,14 +21,12 @@ model = dict(
     type='SLLEncoderDecoder',
     data_preprocessor=data_preprocessor,
     backbone=dict(
-        init_cfg=dict(type='Pretrained', checkpoint=checkpoint_file),
-        embed_dims=96,
-        depths=[2, 2, 6, 2],
-        num_heads=[3, 6, 12, 24],
-        window_size=7,
-        use_abs_pos_embed=False,
-        drop_path_rate=0.3,
-        patch_norm=True),
+        interaction_cfg=(
+            None,
+            dict(type='SpatialExchange', p=1/2),
+            dict(type='ChannelExchange', p=1/2),
+            dict(type='ChannelExchange', p=1/2))
+    ),
     neck=dict(
         type='NL_FPN',
         in_dim=768,
@@ -42,17 +40,10 @@ model = dict(
     #     loss_decode=dict(
     #         type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     decode_head=dict(
-        type='SSL_CD_Head',
-        in_channels=[768, 384, 192, 96],
-        in_index=[0, 1, 2, 3],
-        channels=512,
-        dropout_ratio=0.1,
         num_classes=2,
-        norm_cfg=norm_cfg,
-        align_corners=False,
-        loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
-    auxiliary_head=None)
+        sampler=dict(type='mmseg.OHEMPixelSampler', thresh=0.7, min_kept=100000)),
+        # test_cfg=dict(mode='slide', crop_size=crop_size, stride=(crop_size[0]//2, crop_size[1]//2)),
+    )
 
 vis_backends = [dict(type='CDLocalVisBackend')]
 visualizer = dict(

@@ -2,7 +2,7 @@
 dataset_type = 'LEVIR_CD_Dataset'
 data_root = 'E:/LEVIR_CD_512/'
 
-crop_size = (256, 256)
+crop_size = (512, 512)
 train_pipeline = [
     dict(type='MultiImgLoadImageFromFile'),
     dict(type='MultiImgLoadAnnotations'),

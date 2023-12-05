@@ -1,7 +1,7 @@
 # Copyright (c) Open-CD. All rights reserved.
 import warnings
 from typing import Dict, Optional, Union
-
+import torch
 import mmcv
 import mmengine.fileio as fileio
 import numpy as np
@@ -41,7 +41,7 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
         Returns:
             dict: The dict contains loaded image and meta information.
         """
-        print(results)
+        # print(results)
         filenames_l = results['img_path_l']
         filenames_u = results['img_path_u']
         imgs_l = []
@@ -93,6 +93,7 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
         
         results['imgs_l'] = imgs_l
         results['imgs_u'] = imgs_u
+        results['imgs_u_s'] = imgs_u
         results['img_shape'] = imgs_l[0].shape[:2]
         results['ori_shape'] = imgs_l[0].shape[:2]
 
@@ -189,7 +190,8 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
             label_semantic_seg = mmcv.imfrombytes(
                 seg_label, flag='grayscale', # in mmseg: unchanged
                 backend=self.imdecode_backend).squeeze().astype(np.uint8)
-
+        # print(np.unique(gt_semantic_seg))
+        # print(results['label_path'])
         # reduce zero_label
         if self.reduce_zero_label is None:
             self.reduce_zero_label = results['reduce_zero_label']
@@ -207,7 +209,7 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
                 gt_semantic_seg = gt_semantic_seg
             else:
                 raise ValueError('Invalid value {}'.format(results['format_seg_map']))
-
+        # print(np.unique(gt_semantic_seg))
         if self.reduce_zero_label:
             # avoid using underflow conversion
             gt_semantic_seg[gt_semantic_seg == 0] = 255

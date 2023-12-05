@@ -144,8 +144,8 @@ class Color(ColorTransform):
     def _transform_img(self, results: dict, mag: float) -> None:
         """Apply Color transformation to image."""
         # NOTE defaultly the image should be BGR format
-        img = results['s_img']
-        results['s_img'] = [mmcv.adjust_color(im, mag).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.adjust_color(im, mag).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -188,8 +188,8 @@ class Brightness(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Adjust the brightness of image."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.adjust_brightness(im, mag).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.adjust_brightness(im, mag).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -232,8 +232,8 @@ class Contrast(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Adjust the image contrast."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.adjust_contrast(im, mag).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.adjust_contrast(im, mag).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -276,8 +276,8 @@ class Sharpness(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Adjust the image sharpness."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.adjust_sharpness(im, mag).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.adjust_sharpness(im, mag).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -319,8 +319,8 @@ class Solarize(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Invert all pixel values above magnitude."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.solarize(im, mag).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.solarize(im, mag).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -362,9 +362,9 @@ class SolarizeAdd(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None: 
         """SolarizeAdd the image."""
-        img = results['s_img']
+        img = results['imgs_u_s']
         img_solarized = [np.where(im < 128, np.minimum(im + mag, 255), im) for im in img]
-        results['s_img'] = [img_solarized[i].astype(img[i].dtype) for i in range(0, len(img))]
+        results['imgs_u_s'] = [img_solarized[i].astype(img[i].dtype) for i in range(0, len(img))]
 
 
 @TRANSFORMS.register_module()
@@ -405,8 +405,8 @@ class Posterize(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Posterize the image."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.posterize(im, math.ceil(mag)).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.posterize(im, math.ceil(mag)).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -433,8 +433,8 @@ class Equalize(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Equalizes the histogram of one image."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.imequalize(im).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.imequalize(im).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -462,8 +462,8 @@ class AutoContrast(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Auto adjust image contrast."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.auto_contrast(im).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_s'] = [mmcv.auto_contrast(im).astype(im.dtype) for im in img]
 
 
 @TRANSFORMS.register_module()
@@ -489,5 +489,5 @@ class Invert(ColorTransform):
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Invert the image."""
-        img = results['s_img']
-        results['s_img'] = [mmcv.iminvert(im).astype(im.dtype) for im in img]
+        img = results['imgs_u_s']
+        results['imgs_u_ss'] = [mmcv.iminvert(im).astype(im.dtype) for im in img]
