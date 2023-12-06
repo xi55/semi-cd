@@ -1,6 +1,6 @@
 
 dataset_type = 'LEVIRCDDataset'
-data_root = 'E:/LEVIR_CD_SEMI/'
+data_root = '/root/autodl-tmp/semi-levir/LEVIR_CD_SEMI'
 
 crop_size = (512, 512)
 

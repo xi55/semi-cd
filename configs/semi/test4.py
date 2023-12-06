@@ -18,7 +18,7 @@ data_preprocessor = dict(
 norm_cfg = dict(type='BN', requires_grad=True)
 # checkpoint_file = '/root/autodl-tmp/pretrain/iter_160000.pth'
 model = dict(
-    type='SLLEncoderDecoder',
+    type='ChangerEncoderDecoder',
     data_preprocessor=data_preprocessor,
     backbone=dict(
         interaction_cfg=(
@@ -27,18 +27,6 @@ model = dict(
             dict(type='ChannelExchange', p=1/2),
             dict(type='ChannelExchange', p=1/2))
     ),
-    neck=dict(
-        type='NL_FPN',
-        in_dim=768,
-        reduction=True),
-    # decode_head=dict(
-    #     type='SemiHead',
-    #     in_channels=[96, 192, 384, 768], 
-    #     feature_strides=[4, 8, 16, 32],
-    #     num_classes=9, 
-    #     ignore_index = 255,
-    #     loss_decode=dict(
-    #         type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     decode_head=dict(
         num_classes=2,
         sampler=dict(type='mmseg.OHEMPixelSampler', thresh=0.7, min_kept=100000)),
@@ -80,6 +68,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=4)
+train_dataloader = dict(batch_size=16)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader

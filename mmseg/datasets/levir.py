@@ -14,20 +14,18 @@ class LEVIRCDDataset(_BaseCDDataset):
     """
 
     METAINFO = dict(
-        classes=('background', 'changed'),
+        classes=('unchanged', 'changed'),
         palette=[[0, 0, 0], [255, 255, 255]])
 
     def __init__(self,
                  img_suffix='.png',
                  seg_map_suffix='.png',
-                 data_prefix: dict = dict(img_path_label_from='', img_path_label_to='', img_path_unlabel_from='', img_path_unlabel_to='', label_path=''),
                  reduce_zero_label=False,
                  format_seg_map='to_binary',
                  **kwargs) -> None:
         super().__init__(
             img_suffix=img_suffix,
             seg_map_suffix=seg_map_suffix,
-            data_prefix=data_prefix,
             reduce_zero_label=reduce_zero_label,
             format_seg_map=format_seg_map,
             **kwargs)

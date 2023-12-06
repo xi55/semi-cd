@@ -233,7 +233,7 @@ class SSL_CD_Head(BaseDecodeHead):
         
         loss = dict()
         
-        u_preds = [resize(input=u_pred, size=pseudo_label.shape[2:], 
+        u_preds = [resize(input=u_pred, size=pseudo_label.shape[1:], 
                           mode='bilinear', align_corners=self.align_corners) 
                           for u_pred in [cd_s_logits, cd_fp_logits]]
         cd_s_logits, cd_fp_logits = u_preds
@@ -245,6 +245,9 @@ class SSL_CD_Head(BaseDecodeHead):
             cd_weight = None
         # pseudo_label = pseudo_label.squeeze(1)
         # print(pseudo_label.shape)
+        # print(cd_s_logits.shape)
+        # print(pseudo_label.shape)
+
         loss_strong = self.loss_decode(
             cd_s_logits,
             pseudo_label,
@@ -288,12 +291,14 @@ class SSL_CD_Head(BaseDecodeHead):
             cd_weight = self.sampler.sample(cd_logits, cd_label)
         else:
             cd_weight = None
-        # cd_label = cd_label.squeeze(1)
+        cd_label = cd_label.squeeze(1)
         if not isinstance(self.loss_decode, nn.ModuleList):
             losses_decode = [self.loss_decode]
         else:
             losses_decode = self.loss_decode
 
+        # print(cd_logits.shape)
+        # print(cd_label.shape)
         for loss_decode in losses_decode:
             if loss_decode.loss_name not in loss:
                 loss[loss_decode.loss_name] = loss_decode(
@@ -307,7 +312,7 @@ class SSL_CD_Head(BaseDecodeHead):
                     cd_label,
                     weight=cd_weight,
                     ignore_index=self.ignore_index)
-        cd_label = cd_label.squeeze(1)
+
         loss['acc_seg'] = accuracy(
             cd_logits, cd_label, ignore_index=self.ignore_index)
         return loss

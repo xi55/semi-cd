@@ -8,7 +8,13 @@ NECKS = MODELS
 HEADS = MODELS
 LOSSES = MODELS
 SEGMENTORS = MODELS
+ITERACTION_LAYERS = MODELS
 
+def build_interaction_layer(cfg):
+    """Build backbone."""
+    warnings.warn('``build_interaction_layer`` would be deprecated soon, please use '
+                  '``opencd.registry.MODELS.build()`` ')
+    return ITERACTION_LAYERS.build(cfg)
 
 def build_backbone(cfg):
     """Build backbone."""

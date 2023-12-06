@@ -51,7 +51,7 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+            type='DiceLoss', use_sigmoid=True, loss_weight=1.0)),
     auxiliary_head=None)
 
 vis_backends = [dict(type='CDLocalVisBackend')]
@@ -89,6 +89,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=4)
+train_dataloader = dict(batch_size=8)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader

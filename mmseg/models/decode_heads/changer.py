@@ -5,16 +5,15 @@ from mmcv.cnn import Conv2d, ConvModule, build_activation_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmengine.model import BaseModule, Sequential
 from torch.nn import functional as F
-
-from mmseg.models.decode_heads.decode_head import BaseDecodeHead
+from torch import Tensor
+from .decode_head import BaseDecodeHead
 from mmseg.models.utils import resize
-from mmseg.models.losses import accuracy
 from mmseg.registry import MODELS
 from ..necks.feature_fusion import FeatureFusionNeck
-from mmseg.utils import ConfigType, SampleList
 import matplotlib.pyplot as plt
+from mmseg.utils import ConfigType, SampleList
 from typing import List, Tuple
-from torch import Tensor
+from mmseg.models.losses import accuracy
 
 class FDAF(BaseModule):
     """Flow Dual-Alignment Fusion Module.
@@ -213,13 +212,16 @@ class Changer(BaseDecodeHead):
 
     def forward(self, inputs):
         # Receive 4 stage backbone feature map: 1/4, 1/8, 1/16, 1/32
-        x1, x2 = inputs[0], inputs[1]
-        x1 = self._transform_inputs(x1)
-        x2 = self._transform_inputs(x2)
-
+        inputs = self._transform_inputs(inputs)
+        inputs1 = []
+        inputs2 = []
+        for input in inputs:
+            f1, f2 = torch.chunk(input, 2, dim=1)
+            inputs1.append(f1)
+            inputs2.append(f2)
         
-        out1 = self.base_forward(x1)
-        out2 = self.base_forward(x2)
+        out1 = self.base_forward(inputs1)
+        out2 = self.base_forward(inputs2)
         out = self.neck_layer(out1, out2, 'concat')
 
         out = self.discriminator(out)
@@ -227,78 +229,6 @@ class Changer(BaseDecodeHead):
 
         return out
     
-
-    def display1(self, affinity, s):
-        affinity = affinity.unsqueeze(2)
-        affinity = affinity.cpu().numpy()
-        plt.imshow(affinity)
-        plt.title(s)
-        plt.colorbar()
-        plt.show()
-
-    def _stack_batch_gt(self, batch_data_samples: SampleList) -> Tensor:
-        gt_semantic_segs = [
-            data_sample.gt_sem_seg.data for data_sample in batch_data_samples
-        ]
-        return torch.stack(gt_semantic_segs, dim=0)
-
-    def loss(self, inputs: Tuple[Tensor], data_samples, train_cfg: ConfigType) -> dict:
-        """Forward function for training.
-
-        Args:
-            inputs (Tuple[Tensor]): List of multi-level img features.
-            batch_data_samples (list[:obj:`SegDataSample`]): The seg
-                data samples. It usually includes information such
-                as `img_metas` or `gt_semantic_seg`.
-            train_cfg (dict): The training config.
-
-        Returns:
-            dict[str, Tensor]: a dictionary of loss components
-        """
-        seg_logits = self.forward(inputs)
-        losses = self.loss_by_feat(seg_logits, data_samples)
-        return losses
-
-    def loss_stu(self, 
-                 feat_w_from, feat_w_to,
-                 feat_fp_from, feat_fp_to,
-                 feat_s_from, feat_s_to,
-                 pseudo_label, mask):
-        cd_s_logits = self.forward([feat_s_from, feat_s_to])
-
-        cd_fp_logits = self.forward([feat_fp_from, feat_fp_to])
-        
-        loss = dict()
-        
-        u_preds = [resize(input=u_pred, size=pseudo_label.shape[2:], 
-                          mode='bilinear', align_corners=self.align_corners) 
-                          for u_pred in [cd_s_logits, cd_fp_logits]]
-        cd_s_logits, cd_fp_logits = u_preds
-
-
-        if self.sampler is not None:
-            cd_weight = self.sampler.sample(cd_s_logits, pseudo_label)
-        else:
-            cd_weight = None
-        pseudo_label = pseudo_label.squeeze(1)
-        # print(pseudo_label.shape)
-        loss_strong = self.loss_decode(
-            cd_s_logits,
-            pseudo_label,
-            weight=mask,
-            ignore_index=self.ignore_index)
-        
-        loss_fp = self.loss_decode(
-            cd_fp_logits,
-            pseudo_label,
-            weight=mask,
-            ignore_index=self.ignore_index)
-        
-        loss['loss_s1'] = 0.5 * loss_strong
-        loss['loss_fp'] = 0.5 * loss_fp
-        
-        return loss
-
     def loss_by_feat(self, cd_logits: Tensor,
                      batch_data_samples: SampleList) -> dict:
         """Compute segmentation loss.
@@ -314,6 +244,7 @@ class Changer(BaseDecodeHead):
         """
         cd_label = self._stack_batch_gt(batch_data_samples)
         # print(torch.unique(cd_label))
+        # print(cd_logits.shape)
         loss = dict()
         cd_logits = resize(
             input=cd_logits,
@@ -329,6 +260,9 @@ class Changer(BaseDecodeHead):
             losses_decode = [self.loss_decode]
         else:
             losses_decode = self.loss_decode
+
+        # print(cd_logits.shape)
+        # print(cd_label.shape)
         for loss_decode in losses_decode:
             if loss_decode.loss_name not in loss:
                 loss[loss_decode.loss_name] = loss_decode(
@@ -345,4 +279,52 @@ class Changer(BaseDecodeHead):
 
         loss['acc_seg'] = accuracy(
             cd_logits, cd_label, ignore_index=self.ignore_index)
+        return loss
+    
+    def _stack_batch_gt(self, batch_data_samples: SampleList) -> Tensor:
+        gt_semantic_segs = [
+            data_sample.gt_sem_seg.data for data_sample in batch_data_samples
+        ]
+        return torch.stack(gt_semantic_segs, dim=0)
+
+    def loss_stu(self, 
+                 feat_fp,
+                 feat_s,
+                 pseudo_label, mask):
+        cd_s_logits = self.forward(feat_s)
+
+        cd_fp_logits = self.forward(feat_fp)
+        
+        loss = dict()
+        
+        u_preds = [resize(input=u_pred, size=pseudo_label.shape[1:], 
+                          mode='bilinear', align_corners=self.align_corners) 
+                          for u_pred in [cd_s_logits, cd_fp_logits]]
+        cd_s_logits, cd_fp_logits = u_preds
+
+
+        # if self.sampler is not None:
+        #     cd_weight = self.sampler.sample(cd_s_logits, pseudo_label)
+        # else:
+        #     cd_weight = None
+        # pseudo_label = pseudo_label.squeeze(1)
+        # print(pseudo_label.shape)
+        # print(cd_s_logits.shape)
+        # print(pseudo_label.shape)
+
+        loss_strong = self.loss_decode(
+            cd_s_logits,
+            pseudo_label,
+            weight=mask,
+            ignore_index=self.ignore_index)
+        
+        loss_fp = self.loss_decode(
+            cd_fp_logits,
+            pseudo_label,
+            weight=mask,
+            ignore_index=self.ignore_index)
+        
+        loss['loss_s1'] = 0.5 * loss_strong
+        loss['loss_fp'] = 0.5 * loss_fp
+        
         return loss

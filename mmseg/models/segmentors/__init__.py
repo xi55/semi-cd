@@ -10,8 +10,9 @@ from .semi_base import SemiBaseDetector
 from .semi_encoder_decoder import SiamEncoderDecoder
 from .ssl_dual_inpuy_encoder_decoder import SDIEncoderDecoder
 from .ssl_encoder_decoder import SLLEncoderDecoder
+from .changer_encoder_decoder import ChangerEncoderDecoder
 __all__ = [
     'BaseSegmentor', 'EncoderDecoder', 'CascadeEncoderDecoder', 'SegTTAModel',
     'MultimodalEncoderDecoder', 'DepthEstimator', 'SoftTeacher', 'SemiBaseDetector',
-    'SiamEncoderDecoder', 'SDIEncoderDecoder', 'SLLEncoderDecoder'
+    'SiamEncoderDecoder', 'SDIEncoderDecoder', 'SLLEncoderDecoder', 'ChangerEncoderDecoder'
 ]
