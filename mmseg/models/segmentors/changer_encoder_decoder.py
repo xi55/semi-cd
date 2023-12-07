@@ -96,13 +96,16 @@ class ChangerEncoderDecoder(SllSemiEncoderDecoder):
 
         fp_logits_cd = self.decode_teacher.predict(feat_fp, batch_img_metas,
                                                     self.test_cfg)
+        
+        s_logits_cd = self.decode_teacher.predict(feat_s, batch_img_metas,
+                                                    self.test_cfg)
 
         l_logits_cd = self.decode_student.predict(feat_l, batch_img_metas,
                                                     self.test_cfg)
         # print(batch_img_metas[0].keys())
         # self.display1(seg_logits_cd[0], batch_img_metas[0]['seg_map_path'].split('\\')[-1])
         
-        return [w_logits_cd, fp_logits_cd, l_logits_cd]
+        return [w_logits_cd, s_logits_cd, fp_logits_cd, l_logits_cd]
 
     def display1(self, affinity, s):
         affinity = affinity.permute(1, 2, 0)
@@ -178,6 +181,9 @@ class ChangerEncoderDecoder(SllSemiEncoderDecoder):
         pseudo_label_cd = torch.softmax(w_logits_cd.detach(), dim=1)
         pseudo_mask, pseudo_label = torch.max(pseudo_label_cd, dim=1)
         mask = pseudo_mask.ge(0.95).float()
+        # print(torch.unique(pseudo_label_cd))
+        # print(torch.unique(pseudo_label))
+        # print(torch.unique(pseudo_mask))
         # print(torch.unique(mask))
         return pseudo_label, mask
 

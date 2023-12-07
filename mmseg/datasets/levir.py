@@ -2,6 +2,7 @@
 
 from mmseg.registry import DATASETS
 from .basecddataset import _BaseCDDataset
+from .basedataset import _BaseDataset
 
 
 @DATASETS.register_module()

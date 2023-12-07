@@ -29,8 +29,10 @@ model = dict(
     ),
     decode_head=dict(
         num_classes=2,
-        sampler=dict(type='mmseg.OHEMPixelSampler', thresh=0.7, min_kept=100000)),
-        # test_cfg=dict(mode='slide', crop_size=crop_size, stride=(crop_size[0]//2, crop_size[1]//2)),
+        sampler=dict(type='mmseg.OHEMPixelSampler', thresh=0.7, min_kept=100000),
+        loss_decode=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
+        
     )
 
 vis_backends = [dict(type='CDLocalVisBackend')]
@@ -68,6 +70,6 @@ param_scheduler = [
 ]
 custom_hooks = [dict(type='MeanTeacherHook')]
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=16)
+train_dataloader = dict(batch_size=4)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader

@@ -93,7 +93,7 @@ class MultiImgLoadImageFromFile(MMCV_LoadImageFromFile):
         
         results['imgs_l'] = imgs_l
         results['imgs_u'] = imgs_u
-        results['imgs_u_s'] = imgs_u
+        results['imgs_u_s'] = None
         results['img_shape'] = imgs_l[0].shape[:2]
         results['ori_shape'] = imgs_l[0].shape[:2]
 

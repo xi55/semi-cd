@@ -27,6 +27,7 @@ from .stare import STAREDataset
 from .synapse import SynapseDataset
 from .mydata import MyDataset
 from .my_seg_data import my_seg_Dataset
+from .basedataset import _BaseDataset
 # yapf: disable
 from .transforms import (CLAHE, AdjustGamma, Albu, BioMedical3DPad,
                          BioMedical3DRandomCrop, BioMedical3DRandomFlip,
@@ -62,5 +63,5 @@ __all__ = [
     'MapillaryDataset_v2', 'Albu', 'LEVIRCDDataset',
     'LoadMultipleRSImageFromFile', 'LoadSingleRSImageFromFile',
     'ConcatCDInput', 'BaseCDDataset', 'DSDLSegDataset', 'BDD100KDataset',
-    'NYUDataset', 'MyDataset', 'my_seg_Dataset'
+    'NYUDataset', 'MyDataset', 'my_seg_Dataset', '_BaseDataset'
 ]

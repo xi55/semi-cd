@@ -504,7 +504,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
             - ``seg_logits``(PixelData): Predicted logits of semantic
                 segmentation before normalization.
         """
-        w_logits_cd, fp_logits_cd, l_logits_cd = seg_logits
+        w_logits_cd, s_logits_cd, fp_logits_cd, l_logits_cd = seg_logits
         
         batch_size, C, H, W = l_logits_cd.shape
         # print(seg_logits_seg.shape)
@@ -531,9 +531,9 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 w_cd_logits = w_logits_cd[i:i + 1, :,
                                           padding_top:H - padding_bottom,
                                           padding_left:W - padding_right]
-                # i_seg_to = seg_logits_to[i:i + 1, :,
-                #                           padding_top:H - padding_bottom,
-                #                           padding_left:W - padding_right]
+                s_cd_logits = s_logits_cd[i:i + 1, :,
+                                          padding_top:H - padding_bottom,
+                                          padding_left:W - padding_right]
                 # i_seg_cd = seg_logits_cd[i:i + 1, :,
                 #                           padding_top:H - padding_bottom,
                 #                           padding_left:W - padding_right]
@@ -551,21 +551,21 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                     if flip_direction == 'horizontal':
                         i_cd_logits = i_cd_logits.flip(dims=(3, ))
                         w_cd_logits = w_cd_logits.flip(dims=(3, ))
-                        # i_seg_to = i_seg_to.flip(dims=(3, ))
+                        s_cd_logits = s_cd_logits.flip(dims=(3, ))
                         # i_seg_cd = i_seg_cd.flip(dims=(3, ))
                         # i_seg_stu_from = i_seg_stu_from.flip(dims=(3, ))
                         # i_seg_stu_to = i_seg_stu_to.flip(dims=(3, ))
                     else:
                         i_cd_logits = i_cd_logits.flip(dims=(2, ))
                         w_cd_logits = w_cd_logits.flip(dims=(2, ))
-                        # i_seg_to = i_seg_to.flip(dims=(2, ))
+                        s_cd_logits = s_cd_logits.flip(dims=(2, ))
                         # i_seg_cd = i_seg_cd.flip(dims=(2, ))
                         # i_seg_stu_from = i_seg_stu_from.flip(dims=(2, ))
                         # i_seg_stu_to = i_seg_stu_to.flip(dims=(2, ))
 
                 # resize as original shape
                 res=[]
-                for i_seg in [i_cd_logits, w_cd_logits]:
+                for i_seg in [i_cd_logits, w_cd_logits, s_cd_logits]:
                     i_seg = resize(
                         i_seg,
                         size=img_meta['ori_shape'],
@@ -573,11 +573,11 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                         align_corners=self.align_corners,
                         warning=False).squeeze(0)
                     res.append(i_seg)
-                i_cd_logits, w_cd_logits = res
+                i_cd_logits, w_cd_logits, s_cd_logits = res
             else:
                 i_cd_logits = l_logits_cd[i]
                 w_cd_logits = w_logits_cd[i]
-                # i_seg_to = seg_logits_to[i]
+                s_cd_logits = s_logits_cd[i]
                 # i_seg_cd = seg_logits_cd[i]
                 # i_seg_stu_from = seg_logits_stu_from[i]
                 # i_seg_stu_to = seg_logits_stu_to[i]
@@ -586,7 +586,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 # print(i_seg_from.shape)
                 i_cd_pred = i_cd_logits.argmax(dim=0, keepdim=True)
                 w_cd_pred = w_cd_logits.argmax(dim=0, keepdim=True)
-                # i_seg_to_pred = i_seg_to.argmax(dim=0, keepdim=True)
+                s_cd_pred = s_cd_logits.argmax(dim=0, keepdim=True)
                 # i_seg_stu_from_pred = i_seg_stu_from.argmax(dim=0, keepdim=True)
                 # i_seg_stu_to_pred = i_seg_stu_to.argmax(dim=0, keepdim=True)
                 # print(torch.unique(i_seg_from_pred))
@@ -594,7 +594,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 # print(1)
                 i_cd_logits = i_cd_logits.sigmoid()
                 w_cd_logits = w_cd_logits.sigmoid()
-                # i_seg_to = i_seg_to.sigmoid()
+                s_cd_logits = s_cd_logits.sigmoid()
                 # i_seg_stu_from = i_seg_stu_from.sigmoid()
                 # i_seg_stu_to = i_seg_stu_to.sigmoid()
                 
@@ -603,8 +603,8 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                               0.5).to(i_cd_logits)
                 w_cd_pred = (w_cd_logits >
                               0.5).to(w_cd_logits)
-                # i_seg_to_pred = (i_seg_to >
-                #               0.5).to(i_seg_to)
+                s_cd_pred = (s_cd_logits >
+                              0.5).to(s_cd_logits)
                 # i_seg_stu_from_pred = (i_seg_stu_from >
                 #               0.5).to(i_seg_stu_from)
                 # i_seg_stu_to_pred = (i_seg_stu_to >
@@ -621,8 +621,8 @@ class SllSemiEncoderDecoder(BaseSegmentor):
                 PixelData(**{'data': i_cd_pred}),
                 'w_cd_pred':
                 PixelData(**{'data': w_cd_pred}),
-                # 'i_seg_from_pred':
-                # PixelData(**{'data': i_seg_from_pred}),
+                's_cd_pred':
+                PixelData(**{'data': s_cd_pred}),
                 # 'i_seg_to_pred':
                 # PixelData(**{'data': i_seg_to_pred}),
                 # 'i_seg_cd_pred':

@@ -93,19 +93,22 @@ class MultiImgPackSegInputs(BaseTransform):
             packed_results['inputs_u'] = imgs_u
         
         if 'imgs_u_s' in results:
-            def _transform_img(img):
-                if len(img.shape) < 3:
-                    img = np.expand_dims(img, -1)
-                if not img.flags.c_contiguous:
-                    img = to_tensor(np.ascontiguousarray(img.transpose(2, 0, 1)))
-                else:
-                    img = img.transpose(2, 0, 1)
-                    img = to_tensor(img).contiguous()
-                return img
-            
-            imgs_u_s = [_transform_img(img_u_s) for img_u_s in results['imgs_u_s']]
-            imgs_u_s = torch.cat(imgs_u_s, axis=0) # -> (6, H, W)
-            packed_results['inputs_u_s'] = imgs_u_s
+            if results['imgs_u_s'] is not None:
+                def _transform_img(img):
+                    if len(img.shape) < 3:
+                        img = np.expand_dims(img, -1)
+                    if not img.flags.c_contiguous:
+                        img = to_tensor(np.ascontiguousarray(img.transpose(2, 0, 1)))
+                    else:
+                        img = img.transpose(2, 0, 1)
+                        img = to_tensor(img).contiguous()
+                    return img
+                
+                imgs_u_s = [_transform_img(img_u_s) for img_u_s in results['imgs_u_s']]
+                imgs_u_s = torch.cat(imgs_u_s, axis=0) # -> (6, H, W)
+                packed_results['inputs_u_s'] = imgs_u_s
+            else:
+                packed_results['inputs_u_s'] = None
 
         if 's2_img' in results:
             def _transform_img(img):

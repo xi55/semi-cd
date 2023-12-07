@@ -16,7 +16,8 @@ class CDLocalVisualizer(SegLocalVisualizer):
     @master_only
     def add_datasample(
             self,
-            name: str,
+            label_name: str,
+            unlabel_name: str,
             image: np.ndarray,
             image_from_to: Sequence[np.array],
             data_batch: dict,
@@ -100,16 +101,25 @@ class CDLocalVisualizer(SegLocalVisualizer):
                                              data_sample.i_cd_pred, classes,
                                              palette)
 
-        # if (draw_pred and data_sample is not None
-        #         and 'pred_sem_seg' in data_sample):
-        #     pred_img_data = image
-        #     assert classes is not None, 'class information is ' \
-        #                                 'not provided when ' \
-        #                                 'visualizing semantic ' \
-        #                                 'segmentation results.'
-        #     pred_img_data = self._draw_sem_seg(pred_img_data,
-        #                                        data_sample.pred_sem_seg,
-        #                                        classes, palette)
+        if (draw_pred and data_sample is not None and 'w_cd_pred' in data_sample):
+            pseudo_label_data = image
+            assert classes is not None, 'class information is ' \
+                                        'not provided when ' \
+                                        'visualizing semantic ' \
+                                        'segmentation results.'
+            pred_w_data = self._draw_sem_seg(pseudo_label_data,
+                                               data_sample.w_cd_pred,
+                                               classes, palette)
+        
+        if (draw_pred and data_sample is not None and 's_cd_pred' in data_sample):
+            pseudo_label_data = image
+            assert classes is not None, 'class information is ' \
+                                        'not provided when ' \
+                                        'visualizing semantic ' \
+                                        'segmentation results.'
+            pred_s_data = self._draw_sem_seg(pseudo_label_data,
+                                               data_sample.s_cd_pred,
+                                               classes, palette)
             
         # if (draw_pred and data_sample is not None and 'i_seg_stu_from_pred' in data_sample \
         #     and 'i_seg_stu_to_pred' in data_sample):
@@ -134,6 +144,15 @@ class CDLocalVisualizer(SegLocalVisualizer):
             drawn_img = gt_img_l_data
         else:
             drawn_img = pred_img_l_data
+
+        if pred_w_data is not None and pred_s_data is not None:
+            drawn_semi_img = np.concatenate((pred_w_data, pred_s_data), axis=1)
+        elif pred_w_data is not None:
+            drawn_semi_img = pred_w_data
+        elif pred_s_data is not None:
+            drawn_semi_img = pred_s_data
+        else:
+            drawn_semi_img = None
 
         # if gt_img_data_from is not None and pred_img_data_from is not None:
         #     drawn_img_weak = np.concatenate((gt_img_data_from, gt_img_data_to), axis=1)
@@ -167,12 +186,14 @@ class CDLocalVisualizer(SegLocalVisualizer):
         #     else:
         #         mmcv.imwrite(mmcv.bgr2rgb(drawn_img), out_file)
         # else:
-        self.add_image(name, drawn_img, None, None, step)
+        self.add_image(label_name, unlabel_name, drawn_img, drawn_semi_img, None, step)
 
     @master_only
-    def add_image(self, name: str,
+    def add_image(self, 
+                  label_name: str,
+                  unlabel_name: str,
                   image: np.ndarray,
-                  image_from: np.ndarray = None,
+                  semi_img: np.ndarray = None,
                   image_to: np.ndarray = None,
                   step: int = 0) -> None:
         """Record the image.
@@ -184,7 +205,7 @@ class CDLocalVisualizer(SegLocalVisualizer):
             step (int): Global step value to record. Defaults to 0.
         """
         for vis_backend in self._vis_backends.values():
-            vis_backend.add_image(name, image, image_from, image_to, step)  # type: ignore
+            vis_backend.add_image(label_name, unlabel_name, image, semi_img, image_to, step)  # type: ignore
 
     @master_only
     def set_image(self, image: np.ndarray) -> None:

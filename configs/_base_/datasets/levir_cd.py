@@ -1,5 +1,5 @@
 
-dataset_type = 'LEVIR_CD_Dataset'
+dataset_type = 'LEVIRCDDataset'
 data_root = 'E:/LEVIR_CD_512/'
 
 crop_size = (512, 512)

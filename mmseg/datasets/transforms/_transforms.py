@@ -414,14 +414,14 @@ class MultiImgRandomRotate(BaseTransform):
                     center=self.center,
                     auto_bound=self.auto_bound) for img_l in results['imgs_l']]
             
-            results['imgs_u'] = [
+            results['imgs_u_s'] = [
                 mmcv.imrotate(
                     img_u,
                     angle=degree,
                     border_value=self.pal_val,
                     center=self.center,
                     auto_bound=self.auto_bound) for img_u in results['imgs_u']]
-  
+            # print(np.unique(results['imgs_u_s']))
 
             # rotate segs
             for key in results.get('seg_fields', []):
@@ -727,8 +727,12 @@ class MultiImgPhotoMetricDistortion(BaseTransform):
         #                   for img in results['img']]
         results['imgs_l'] = [_photo_metric_distortion(img_l, contrast_mode) \
                           for img_l in results['imgs_l']]
-        results['imgs_u_s'] = [_photo_metric_distortion(img_u, contrast_mode) \
-                          for img_u in results['imgs_u']]
+        if results['imgs_u_s'] is not None:
+            results['imgs_u_s'] = [_photo_metric_distortion(img_u, contrast_mode) \
+                            for img_u in results['imgs_u_s']]
+        else:
+            results['imgs_u_s'] = [_photo_metric_distortion(img_u, contrast_mode) \
+                            for img_u in results['imgs_u']]
 
         return results
 

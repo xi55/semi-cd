@@ -227,12 +227,14 @@ class DualInputSegDataPreProcessor(BaseDataPreprocessor):
         if self._enable_normalize:
             inputs_u = [(_input_u - self.mean) / self.std for _input_u in inputs_u]
 
-        if self.channel_conversion and inputs_u_s[0].size(0) == 6:
-            inputs_u_s = [_input_u_s[[2, 1, 0, 5, 4, 3], ...] for _input_u_s in inputs_u_s]
-        inputs_u_s = [_input_u_s.float() for _input_u_s in inputs_u_s]
-        if self._enable_normalize:
-            inputs_u_s = [(_input_u_s - self.mean) / self.std for _input_u_s in inputs_u_s]
-            
+        if inputs_u_s[0] is not None:
+            if self.channel_conversion and inputs_u_s[0].size(0) == 6:
+                inputs_u_s = [_input_u_s[[2, 1, 0, 5, 4, 3], ...] for _input_u_s in inputs_u_s]
+            inputs_u_s = [_input_u_s.float() for _input_u_s in inputs_u_s]
+            if self._enable_normalize:
+                inputs_u_s = [(_input_u_s - self.mean) / self.std for _input_u_s in inputs_u_s]
+        else:
+            inputs_u_s = inputs_u
         inputs_all = [torch.concat([inputs_l[i], inputs_u[i], inputs_u_s[i]], dim=0) for i in range(0, len(inputs_l))]
         if training:
             assert data_samples is not None, ('During training, ',

@@ -12,9 +12,10 @@ class CDLocalVisBackend(LocalVisBackend):
 
     @force_init_env
     def add_image(self,
-                  name: str,
+                  label_name: str,
+                  unlabel_name: str,
                   image: np.array,
-                  image_weak: np.array = None,
+                  semi_img: np.array = None,
                   image_strong: np.array = None,
                   step: int = 0,
                   **kwargs) -> None:
@@ -30,17 +31,16 @@ class CDLocalVisBackend(LocalVisBackend):
 
         drawn_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         os.makedirs(self._img_save_dir, exist_ok=True)
-        save_file_name = f'{name}.png'
+        save_label_name = f'{label_name}.png'
+        save_unlabel_name = f'{unlabel_name}.png'
 
-        if image_weak is not None and image_strong is not None:
-            assert image_weak.dtype == np.uint8 and image_strong.dtype == np.uint8
-            drawn_image_weak = cv2.cvtColor(image_weak, cv2.COLOR_RGB2BGR)
-            drawn_image_strong = cv2.cvtColor(image_strong, cv2.COLOR_RGB2BGR)
-            for sub_dir in ['seg', 'weak', 'strong']:
+        if semi_img is not None:
+            assert semi_img.dtype == np.uint8
+            drawn_image_weak = cv2.cvtColor(semi_img, cv2.COLOR_RGB2BGR)
+            for sub_dir in ['label_cd', 'unlabel_cd']:
                 os.makedirs(osp.join(self._img_save_dir, sub_dir), exist_ok=True)
 
-            cv2.imwrite(osp.join(self._img_save_dir, 'seg', save_file_name), drawn_image)
-            cv2.imwrite(osp.join(self._img_save_dir, 'weak', save_file_name), drawn_image_weak)
-            cv2.imwrite(osp.join(self._img_save_dir, 'strong', save_file_name), drawn_image_strong)
+            cv2.imwrite(osp.join(self._img_save_dir, 'label_cd', save_label_name), drawn_image)
+            cv2.imwrite(osp.join(self._img_save_dir, 'unlabel_cd', save_unlabel_name), semi_img)
         else:       
-            cv2.imwrite(osp.join(self._img_save_dir, save_file_name), drawn_image)
+            cv2.imwrite(osp.join(self._img_save_dir, save_label_name), drawn_image)

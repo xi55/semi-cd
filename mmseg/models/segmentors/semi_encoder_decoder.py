@@ -92,7 +92,7 @@ class SiamEncoderDecoder(BaseSegmentor):
             assert backbone.get('pretrained') is None, \
                 'both backbone and segmentor set pretrained weight'
             backbone.pretrained = pretrained
-        # self.backbone = MODELS.build(backbone)
+        self.backbone = MODELS.build(backbone)
         if neck is not None:
             self.neck = MODELS.build(neck)
         self._init_decode_head(decode_head)

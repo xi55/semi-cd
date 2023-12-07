@@ -169,8 +169,10 @@ class CDVisualizationHook(SegVisualizationHook):
 
             for output in outputs:
                 img_path_l = data_batch['data_samples'][0].img_path_l[0]
+                img_path_u = data_batch['data_samples'][0].img_path_u[0]
                 img_l_from_to = []
-                window_name = osp.basename(img_path_l).split('.')[0]
+                label_name = osp.basename(img_path_l).split('.')[0]
+                unlabel_name = osp.basename(img_path_u).split('.')[0]
                 if self.img_shape is not None:
                     assert len(self.img_shape) == 3, \
                         '`img_shape` should be (H, W, C)'
@@ -190,7 +192,8 @@ class CDVisualizationHook(SegVisualizationHook):
                         
                 img = np.zeros(self.img_shape)
                 self._visualizer.add_datasample(
-                    window_name,
+                    label_name,
+                    unlabel_name,
                     img,
                     img_l_from_to,
                     data_batch=data_batch,

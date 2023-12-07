@@ -1,6 +1,6 @@
 
 dataset_type = 'LEVIRCDDataset'
-data_root = '/root/autodl-tmp/semi-levir/LEVIR_CD_SEMI'
+data_root = 'E:/LEVIR_CD_SEMI'
 
 crop_size = (512, 512)
 
@@ -36,8 +36,9 @@ train_pipeline = [
         type='RandomOrder',
         transforms=[
             dict(type='RandAugment', aug_space=color_space, aug_num=1),
-            dict(type='RandAugment', aug_space=geometric, aug_num=1),
-        ]),
+            # dict(type='RandAugment', aug_space=geometric, aug_num=1),
+        ]
+        ),
     
     # dict(
     #     type='MultiImgRandomResize',
@@ -51,6 +52,7 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='MultiImgLoadImageFromFile'),
+    dict(type='MultiImgPhotoMetricDistortion'),
     # dict(type='MultiImgResize', scale=(512, 512), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
