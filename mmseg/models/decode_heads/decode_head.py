@@ -258,7 +258,7 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        seg_logits = self.forward(inputs)
+        seg_logits, out1, out2 = self.forward(inputs)
         losses = self.loss_by_feat(seg_logits, batch_data_samples)
         return losses
 
@@ -350,7 +350,7 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         Returns:
             Tensor: Outputs segmentation logits map.
         """
-
+        seg_logits, out1, out2 = seg_logits
         seg_logits = resize(
             input=seg_logits,
             # size=batch_img_metas[0]['img_shape'],

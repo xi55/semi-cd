@@ -132,6 +132,7 @@ class ChangerEncoderDecoder(SllSemiEncoderDecoder):
             losses = dict()
 
             loss_decode = self._decode_head_forward_train(feat_l,
+                                                          feat_w,
                                                           feat_fp,
                                                           feat_s,
                                                           pseudo_label, mask,
@@ -152,6 +153,7 @@ class ChangerEncoderDecoder(SllSemiEncoderDecoder):
     
     def _decode_head_forward_train(self, 
                                    feat_l,
+                                   feat_w,
                                    feat_fp,
                                    feat_s,
                                    pseudo_label, mask,
@@ -162,7 +164,8 @@ class ChangerEncoderDecoder(SllSemiEncoderDecoder):
         
         loss_decode = self.decode_student.loss(feat_l, data_samples,
                                             self.train_cfg)
-        loss_stu = self.decode_teacher.loss_stu(feat_fp,
+        loss_stu = self.decode_teacher.loss_stu(feat_w,
+                                                feat_fp,
                                                 feat_s,
                                                 pseudo_label, mask)
         loss_decode.update(loss_stu)

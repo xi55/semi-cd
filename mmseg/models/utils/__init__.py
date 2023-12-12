@@ -17,7 +17,7 @@ from .up_conv_block import UpConvBlock
 from .wrappers import Upsample, resize
 from .san_layers import MLP, LayerNorm2d, cross_attn_layer
 from .interaction_layer import (Aggregation_distribution, ChannelExchange,
-                                SpatialExchange, TwoIdentity)
+                                SpatialExchange, TwoIdentity, MHSA_AD)
 
 __all__ = [
     'ResLayer', 'SelfAttentionBlock', 'make_divisible', 'InvertedResidual',
@@ -26,5 +26,5 @@ __all__ = [
     'Upsample', 'resize', 'DAPPM', 'PAPPM', 'BasicBlock', 'Bottleneck',
     'cross_attn_layer', 'LayerNorm2d', 'MLP', 'Aggregation_distribution', 
     'ChannelExchange', 'SpatialExchange', 'TwoIdentity',
-    'get_uncertain_point_coords_with_randomness'
+    'get_uncertain_point_coords_with_randomness', 'MHSA_AD'
 ]

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import build_activation_layer, build_conv_layer, build_norm_layer
 from mmengine.model import BaseModule
-
+from mmcv.cnn.bricks.transformer import FFN
 from mmseg.models.builder import ITERACTION_LAYERS
 from mmseg.registry import MODELS
 
@@ -92,7 +92,70 @@ class Aggregation_distribution(BaseModule):
         attn1 = torch.sigmoid(attn1)
         attn2 = torch.sigmoid(attn2)
         return x1 * attn1, x2 * attn2
+    
 
+@ITERACTION_LAYERS.register_module()
+class MHSA_AD(BaseModule):
+    def __init__(self, 
+                 dim, 
+                 num_heads,
+                 drop_rate=0.,
+                 attn_drop_rate=0.,
+                 drop_path_rate=0.,
+                 act_cfg=dict(type='GELU'), 
+                 norm_cfg=dict(type='LN'), 
+                 *args, **kwargs):
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.mlp_q = nn.Linear(self.dim, self.dim)
+        self.mlp_k = nn.Linear(self.dim, self.dim)
+        self.mlp_v = nn.Linear(self.dim, self.dim)
+        self.softmax = nn.Softmax(dim=-1)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(attn_drop_rate)
+        self.norm1 = build_norm_layer(norm_cfg, dim)[1]
+        self.norm2 = build_norm_layer(norm_cfg, dim)[1]
+
+        self.ffn = FFN(
+            embed_dims=dim,
+            feedforward_channels=dim * 2,
+            num_fcs=2,
+            ffn_drop=drop_rate,
+            dropout_layer=dict(type='DropPath', drop_prob=drop_path_rate),
+            act_cfg=act_cfg,
+            add_identity=True,
+            init_cfg=None)
+
+        self.scale = dim ** -0.5
+    def forward(self, x1, x2):
+        B, C, H, W = x1.shape
+        N = H * W
+        x1 = x1.reshape(B, C, -1).permute(0, 2, 1)
+        x2 = x2.reshape(B, C, -1).permute(0, 2, 1)
+
+        x1 = self.norm1(x1)
+        x2 = self.norm1(x2)
+
+        Q_t1 = self.mlp_q(x1).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+        K_t2 = self.mlp_k(x2).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+        V_x1 = self.mlp_v(x1).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+        V_x2 = self.mlp_v(x2).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+
+        Q_t1 = Q_t1 * self.scale
+
+        attn = Q_t1 @ K_t2.transpose(-2, -1)
+        attn = 1 - self.softmax(attn)
+
+        change_attn1 = (attn @ V_x1).transpose(1, 2).reshape(B, N, C)
+        change_attn1 = self.norm2(change_attn1)
+        x1 = self.ffn(change_attn1, identity=x1).permute(0, 2, 1).reshape(B, C, H, W)
+
+        change_attn2 = (attn @ V_x2).transpose(1, 2).reshape(B, N, C)
+        change_attn2 = self.norm2(change_attn2)
+        x2 = self.ffn(change_attn2, identity=x2).permute(0, 2, 1).reshape(B, C, H, W)
+
+        return x1, x2
 
 @ITERACTION_LAYERS.register_module()
 class TwoIdentity(BaseModule):

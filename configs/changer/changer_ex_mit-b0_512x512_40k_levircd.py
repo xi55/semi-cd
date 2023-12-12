@@ -14,7 +14,7 @@ model = dict(
             None,
             dict(type='SpatialExchange', p=1/2),
             dict(type='ChannelExchange', p=1/2),
-            dict(type='ChannelExchange', p=1/2))
+            dict(type='MHSA_AD', dim=256, num_heads=16))
     ),
     decode_head=dict(
         num_classes=2,

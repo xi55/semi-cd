@@ -227,7 +227,7 @@ class Changer(BaseDecodeHead):
         out = self.discriminator(out)
         out = self.cls_seg(out)
 
-        return out
+        return out, out1, out2
     
     def loss_by_feat(self, cd_logits: Tensor,
                      batch_data_samples: SampleList) -> dict:
@@ -287,13 +287,17 @@ class Changer(BaseDecodeHead):
         ]
         return torch.stack(gt_semantic_segs, dim=0)
 
-    def loss_stu(self, 
+    def loss_stu(self,
+                 feat_w, 
                  feat_fp,
                  feat_s,
                  pseudo_label, mask):
-        cd_s_logits = self.forward(feat_s)
+        
+        cd_w_logits, out1_w, out2_w = self.forward(feat_w)
 
-        cd_fp_logits = self.forward(feat_fp)
+        cd_s_logits, out1_s, out2_s = self.forward(feat_s)
+
+        cd_fp_logits, out1_fp, out2_fp = self.forward(feat_fp)
         
         loss = dict()
         
@@ -311,6 +315,14 @@ class Changer(BaseDecodeHead):
         # print(pseudo_label.shape)
         # print(cd_s_logits.shape)
         # print(pseudo_label.shape)
+        
+        similarity_w = torch.cosine_similarity(out1_w, out2_w, dim=1)
+        similarity_s = torch.cosine_similarity(out1_s, out2_s, dim=1)
+
+        loss_mse = torch.nn.MSELoss(reduction='mean')
+        loss_regular = loss_mse(similarity_s, similarity_w)
+
+        # print(loss_regular)
 
         loss_strong = self.loss_decode(
             cd_s_logits,
@@ -326,5 +338,6 @@ class Changer(BaseDecodeHead):
         
         loss['loss_s1'] = 0.5 * loss_strong
         loss['loss_fp'] = 0.5 * loss_fp
+        loss['loss_regular'] = 0.3 * loss_regular
         
         return loss
