@@ -77,6 +77,7 @@ class IoUMetricCD(BaseMetric):
         num_classes = len(self.dataset_meta['classes'])
         for data_sample in data_samples:
             pred_label = data_sample['i_cd_pred']['data'].squeeze()
+            pred_label_w = data_sample['w_cd_pred']['data'].squeeze()
             # print(data_sample.keys())
             # print(data_batch['data_samples'][0].keys())
             # print(torch.unique(data_sample['pred_sem_seg']['data']))
@@ -85,15 +86,24 @@ class IoUMetricCD(BaseMetric):
             # format_only always for test dataset without ground truth
             if not self.format_only:
                 # print(torch.unique(data_sample['label_seg_map']['data']))
-                if 'label_seg_map' in data_sample.keys():
-                    label = data_sample['label_seg_map']['data'].squeeze().to(
-                        pred_label)
-                else:
-                    label = data_batch['data_samples'][0].gt_sem_seg.data.squeeze().to(
-                        pred_label)  
-                self.results.append(
-                    self.intersect_and_union(pred_label, label, num_classes,
+                # if 'label_seg_map' in data_sample.keys():
+                #     label = data_sample['label_seg_map']['data'].squeeze().to(
+                #         pred_label)
+                # else:
+                #     label = data_batch['data_samples'][0].gt_sem_seg.data.squeeze().to(
+                #         pred_label)  
+                # self.results.append(
+                #     self.intersect_and_union(pred_label, label, num_classes,
+                #                              self.ignore_index))
+                
+                if 'label_u' in data_batch['data_samples'][0].keys():
+                    label_u = data_batch['data_samples'][0].label_u.data.squeeze().to(
+                        pred_label_w)  
+                    
+                    self.results.append(
+                    self.intersect_and_union(pred_label_w, label_u, num_classes,
                                              self.ignore_index))
+
             # format_result
             if self.output_dir is not None:
                 basename = osp.splitext(osp.basename(

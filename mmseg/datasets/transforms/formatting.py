@@ -131,6 +131,11 @@ class MultiImgPackSegInputs(BaseTransform):
                 data=to_tensor(results['gt_seg_map'][None,
                                                      ...].astype(np.int64)))
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
+        if 'label_u' in results:
+            label_u_data = dict(
+                data=to_tensor(results['label_u'][None,
+                                                     ...].astype(np.int64)))
+            data_sample.label_u = PixelData(**label_u_data)
         
         if 'gt_edge_map' in results:
             gt_edge_data = dict(

@@ -214,6 +214,7 @@ CustomDataset的imgs/gt_semantic_seg成对,除了后缀之外都应该相同。�
         img_u_from_path = self.data_prefix.get("img_path_unlabel_from", None)
         img_u_to_path = self.data_prefix.get("img_path_unlabel_to", None)
         label_path = self.data_prefix.get('label_path', None)
+        label_u_path = self.data_prefix.get('label_u_path', None)
         # print(f'self.data_prefix: {self.data_prefix}')
         # print(f'img_path_label_from: {img_l_from_path}')
         # print(f'img_path_label_to: {img_l_to_path}')
@@ -228,6 +229,9 @@ CustomDataset的imgs/gt_semantic_seg成对,除了后缀之外都应该相同。�
                 if label_path is not None:
                     seg_map = img_name + self.seg_map_suffix
                     data_info['label_path'] = osp.join(label_path, seg_map)
+                if label_u_path is not None:
+                    seg_map = img_name + self.seg_map_suffix
+                    data_info['label_u_path'] = osp.join(label_u_path, seg_map)
                 data_info['label_map'] = self.label_map
                 data_info['format_seg_map'] = self.format_seg_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
@@ -284,6 +288,9 @@ CustomDataset的imgs/gt_semantic_seg成对,除了后缀之外都应该相同。�
                 if label_path is not None:
                     seg_map = img_l.replace(self.img_suffix, self.seg_map_suffix)
                     data_info['label_path'] = osp.join(label_path, seg_map)
+                if label_u_path is not None:
+                    seg_map = img_u.replace(self.img_suffix, self.seg_map_suffix)
+                    data_info['label_u_path'] = osp.join(label_u_path, seg_map)
                 
                 data_info['label_map'] = self.label_map
                 data_info['format_seg_map'] = self.format_seg_map

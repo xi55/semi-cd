@@ -12,8 +12,11 @@ model = dict(
     backbone=dict(
         interaction_cfg=(
             None,
+            # dict(type='MHSA_AD', dim=32, num_heads=2),
             dict(type='SpatialExchange', p=1/2),
+            # dict(type='MHSA_AD', dim=64, num_heads=4),
             dict(type='ChannelExchange', p=1/2),
+            # dict(type='MHSA_AD', dim=160, num_heads=10),
             dict(type='MHSA_AD', dim=256, num_heads=16))
     ),
     decode_head=dict(
@@ -57,7 +60,7 @@ optim_wrapper = dict(
             'head': dict(lr_mult=10.)
         }))
 
-train_cfg = dict(type='IterBasedTrainLoop', max_iters=40000, val_interval=1000)
+train_cfg = dict(type='IterBasedTrainLoop', max_iters=40000, val_interval=4000)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 vis_backends = [dict(type='CDLocalVisBackend')]
@@ -77,3 +80,4 @@ custom_hooks = [dict(type='MeanTeacherHook')]
 # test_evaluator = dict(
 #     type='mmseg.IoUMetric',
 #     iou_metrics=['mFscore', 'mIoU'])
+train_dataloader = dict(batch_size=16)

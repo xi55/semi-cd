@@ -1,6 +1,6 @@
 
 dataset_type = 'LEVIRCDDataset'
-data_root = 'E:/LEVIR_CD_SEMI'
+data_root = '/root/autodl-tmp/LEVIR_CD_SEMI'
 
 crop_size = (512, 512)
 
@@ -52,7 +52,7 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='MultiImgLoadImageFromFile'),
-    dict(type='MultiImgPhotoMetricDistortion'),
+    # dict(type='MultiImgPhotoMetricDistortion'),
     # dict(type='MultiImgResize', scale=(512, 512), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
@@ -103,6 +103,7 @@ val_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             label_path='val/label',
+            label_u_path='val/label_u',
             img_path_label_from='val/val_l/A', 
             img_path_label_to='val/val_l/B',
             img_path_unlabel_from='val/val_u/A', 
@@ -118,6 +119,7 @@ test_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             label_path='val/label',
+            label_u_path='val/label_u',
             img_path_label_from='val/val_l/A', 
             img_path_label_to='val/val_l/B',
             img_path_unlabel_from='val/val_u/A', 

@@ -177,17 +177,16 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         Returns:
             dict: The dict contains loaded semantic segmentation annotations.
         """
-        
         img_bytes = fileio.get(
             results['label_path'], backend_args=self.backend_args)
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='grayscale', # in mmseg: unchanged
             backend=self.imdecode_backend).squeeze().astype(np.uint8)
         
-        if 'img_seg_label' in results.keys():
+        if 'label_u_path' in results.keys():
             seg_label = fileio.get(
-                results['img_seg_label'], backend_args=self.backend_args)
-            label_semantic_seg = mmcv.imfrombytes(
+                results['label_u_path'], backend_args=self.backend_args)
+            unlabel_semantic_seg = mmcv.imfrombytes(
                 seg_label, flag='grayscale', # in mmseg: unchanged
                 backend=self.imdecode_backend).squeeze().astype(np.uint8)
         # print(np.unique(gt_semantic_seg))
@@ -205,10 +204,18 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
                 gt_semantic_seg_copy = gt_semantic_seg.copy()
                 gt_semantic_seg[gt_semantic_seg_copy < 128] = 0
                 gt_semantic_seg[gt_semantic_seg_copy >= 128] = 1
+                if 'label_u_path' in results.keys():
+                    unlabel_semantic_seg_copy = unlabel_semantic_seg.copy()
+                    unlabel_semantic_seg[unlabel_semantic_seg_copy < 128] = 0
+                    unlabel_semantic_seg[unlabel_semantic_seg_copy >= 128] = 1
             elif results['format_seg_map'] == 'to_binary':
                 gt_semantic_seg = gt_semantic_seg
+                if 'label_u_path' in results.keys():
+                    unlabel_semantic_seg = unlabel_semantic_seg
             else:
                 raise ValueError('Invalid value {}'.format(results['format_seg_map']))
+        
+
         # print(np.unique(gt_semantic_seg))
         if self.reduce_zero_label:
             # avoid using underflow conversion
@@ -216,10 +223,10 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
             gt_semantic_seg = gt_semantic_seg - 1
             gt_semantic_seg[gt_semantic_seg == 254] = 255
 
-            if 'img_seg_label' in results.keys():
-                label_semantic_seg[label_semantic_seg == 0] = 255
-                label_semantic_seg = label_semantic_seg - 1
-                label_semantic_seg[label_semantic_seg == 254] = 255
+            if 'label_u_path' in results.keys():
+                unlabel_semantic_seg[unlabel_semantic_seg == 0] = 255
+                unlabel_semantic_seg = unlabel_semantic_seg - 1
+                unlabel_semantic_seg[unlabel_semantic_seg == 254] = 255
         # modify to format ann
         
         # modify if custom classes
@@ -233,9 +240,9 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         
         results['gt_seg_map'] = gt_semantic_seg
         results['seg_fields'].append('gt_seg_map')
-        if 'img_seg_label' in results.keys():
-            results['label_seg_map'] = label_semantic_seg
-            results['seg_fields'].append('label_seg_map')
+        if 'label_u_path' in results.keys():
+            results['label_u'] = unlabel_semantic_seg
+            results['seg_fields'].append('unlabel_semantic_seg')
         
 
     def __repr__(self) -> str:
