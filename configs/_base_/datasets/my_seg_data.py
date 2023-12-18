@@ -1,6 +1,6 @@
 
 dataset_type = 'my_seg_Dataset'
-data_root = 'E:/changeDectect/semi_seg'
+data_root = '/hdd/sdb1/fa/semi/dataset/semi_seg'
 
 crop_size = (512, 512)
 
@@ -87,8 +87,8 @@ train_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             label_path='train/label',
-            img_path_label='train/train_l',  
-            img_path_unlabel='train/train_u'
+            img_path_label='train/seg_l',  
+            img_path_unlabel='train/seg_u'
             ),
         pipeline=train_pipeline))
 val_dataloader = dict(
@@ -100,9 +100,9 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            label_path='val/label',
-            img_path_label='val/val_l',
-            img_path_unlabel='val/val_u'),
+            label_path='test/label',
+            img_path_label='test/seg_l',
+            img_path_unlabel='test/seg_u'),
         pipeline=test_pipeline))
 test_dataloader = dict(
     batch_size=1,
@@ -113,12 +113,9 @@ test_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            label_path='val/label',
-            label_u_path='val/label_u',
-            img_path_label_from='val/val_l/A', 
-            img_path_label_to='val/val_l/B',
-            img_path_unlabel_from='val/val_u/A', 
-            img_path_unlabel_to='val/val_u/B'),
+            label_path='test/label',
+            img_path_label='test/seg_l',
+            img_path_unlabel='test/seg_u'),
         pipeline=test_pipeline))
 
 val_evaluator = dict(type='mmseg.IoUMetric', iou_metrics=['mFscore', 'mIoU'])
