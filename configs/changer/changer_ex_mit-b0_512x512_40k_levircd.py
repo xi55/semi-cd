@@ -80,4 +80,4 @@ custom_hooks = [dict(type='MeanTeacherHook')]
 # test_evaluator = dict(
 #     type='mmseg.IoUMetric',
 #     iou_metrics=['mFscore', 'mIoU'])
-train_dataloader = dict(batch_size=16)
+train_dataloader = dict(batch_size=8)

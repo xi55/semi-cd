@@ -108,12 +108,12 @@ class MHSA_AD(BaseModule):
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
-        self.mlp_q = nn.Linear(self.dim, self.dim)
-        self.mlp_k = nn.Linear(self.dim, self.dim)
-        self.mlp_v = nn.Linear(self.dim, self.dim)
+        # self.mlp_q = nn.Linear(self.dim, self.dim)
+        # self.mlp_k = nn.Linear(self.dim, self.dim)
+        # self.mlp_v = nn.Linear(self.dim, self.dim)
         self.softmax = nn.Softmax(dim=-1)
-        self.proj = nn.Linear(dim, dim)
-        self.proj_drop = nn.Dropout(attn_drop_rate)
+        # self.proj = nn.Linear(dim, dim)
+        # self.proj_drop = nn.Dropout(attn_drop_rate)
         self.norm1 = build_norm_layer(norm_cfg, dim)[1]
         self.norm2 = build_norm_layer(norm_cfg, dim)[1]
 
@@ -134,13 +134,13 @@ class MHSA_AD(BaseModule):
         x1 = x1.reshape(B, C, -1).permute(0, 2, 1)
         x2 = x2.reshape(B, C, -1).permute(0, 2, 1)
 
-        x1 = self.norm1(x1)
-        x2 = self.norm1(x2)
+        # x1 = self.norm1(x1)
+        # x2 = self.norm1(x2)
 
-        Q_t1 = self.mlp_q(x1).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        K_t2 = self.mlp_k(x2).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        V_x1 = self.mlp_v(x1).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        V_x2 = self.mlp_v(x2).reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+        Q_t1 = x1
+        K_t2 = x2
+        V_x1 = x1
+        V_x2 = x2
 
         Q_t1 = Q_t1 * self.scale
 
