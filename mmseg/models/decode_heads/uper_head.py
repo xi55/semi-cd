@@ -231,4 +231,24 @@ class UPerHead(BaseDecodeHead):
         loss['loss_fp'] = 0.5 * loss_fp
         
         return loss
+    
+    def predict_by_feat(self, seg_logits: Tensor,
+                        batch_img_metas) -> Tensor:
+        """Transform a batch of output seg_logits to the input shape.
+
+        Args:
+            seg_logits (Tensor): The output from decode head forward function.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+
+        Returns:
+            Tensor: Outputs segmentation logits map.
+        """
+
+        seg_logits = resize(
+            input=seg_logits,
+            size=batch_img_metas[0].img_shape,
+            mode='bilinear',
+            align_corners=self.align_corners)
+        return seg_logits
 
