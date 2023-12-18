@@ -7,7 +7,9 @@ from mmseg.registry import MODELS
 from ..utils import resize
 from .decode_head import BaseDecodeHead
 from .psp_head import PPM
-
+from mmseg.utils import ConfigType, SampleList
+from mmseg.models.losses import accuracy
+from torch import Tensor
 
 @MODELS.register_module()
 class UPerHead(BaseDecodeHead):
@@ -137,3 +139,96 @@ class UPerHead(BaseDecodeHead):
         output = self._forward_feature(inputs)
         output = self.cls_seg(output)
         return output
+    
+    def loss_by_feat(self, seg_logits: Tensor,
+                     batch_data_samples: SampleList) -> dict:
+        """Compute segmentation loss.
+
+        Args:
+            seg_logits (Tensor): The output from decode head forward function.
+            batch_data_samples (List[:obj:`SegDataSample`]): The seg
+                data samples. It usually includes information such
+                as `metainfo` and `gt_sem_seg`.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
+        seg_label = self._stack_batch_gt(batch_data_samples)
+        # print(torch.unique(seg_label))
+        # print(seg_logits.shape)
+        loss = dict()
+        seg_logits = resize(
+            input=seg_logits,
+            size=seg_label.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        if self.sampler is not None:
+            seg_weight = self.sampler.sample(seg_logits, seg_label)
+        else:
+            seg_weight = None
+        seg_label = seg_label.squeeze(1)
+        if not isinstance(self.loss_decode, nn.ModuleList):
+            losses_decode = [self.loss_decode]
+        else:
+            losses_decode = self.loss_decode
+
+        # print(seg_logits.shape)
+        # print(seg_label.shape)
+        for loss_decode in losses_decode:
+            if loss_decode.loss_name not in loss:
+                loss[loss_decode.loss_name] = loss_decode(
+                    seg_logits,
+                    seg_label,
+                    weight=seg_weight,
+                    ignore_index=self.ignore_index)
+            else:
+                loss[loss_decode.loss_name] += loss_decode(
+                    seg_logits,
+                    seg_label,
+                    weight=seg_weight,
+                    ignore_index=self.ignore_index)
+
+        loss['acc_seg'] = accuracy(
+            seg_logits, seg_label, ignore_index=self.ignore_index)
+        return loss
+    
+    def _stack_batch_gt(self, batch_data_samples: SampleList) -> Tensor:
+        gt_semantic_segs = [
+            data_sample.gt_sem_seg.data for data_sample in batch_data_samples
+        ]
+        return torch.stack(gt_semantic_segs, dim=0)
+
+    def loss_stu(self,
+                 feat_fp,
+                 feat_s,
+                 pseudo_label, mask):
+        
+
+        seg_s_logits = self.forward(feat_s)
+
+        seg_fp_logits = self.forward(feat_fp)
+        
+        loss = dict()
+        
+        u_preds = [resize(input=u_pred, size=pseudo_label.shape[1:], 
+                          mode='bilinear', align_corners=self.align_corners) 
+                          for u_pred in [seg_s_logits, seg_fp_logits]]
+        seg_s_logits, seg_fp_logits = u_preds
+
+        loss_strong = self.loss_decode(
+            seg_s_logits,
+            pseudo_label,
+            weight=mask,
+            ignore_index=self.ignore_index)
+        
+        loss_fp = self.loss_decode(
+            seg_fp_logits,
+            pseudo_label,
+            weight=mask,
+            ignore_index=self.ignore_index)
+        
+        loss['loss_s'] = 0.5 * loss_strong
+        loss['loss_fp'] = 0.5 * loss_fp
+        
+        return loss
+

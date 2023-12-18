@@ -96,14 +96,13 @@ class SllSemiEncoderDecoder(BaseSegmentor):
         if neck is not None:
             self.neck = MODELS.build(neck)
         self._init_decode_head(decode_head)
-        self._init_cd_decode_head(cd_decode_head)
         self._init_auxiliary_head(auxiliary_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.backbone_inchannels = backbone_inchannels # RGB: 3
 
-        assert self.with_cd_decode_head
+        assert self.with_decode_head
 
     def _init_decode_head(self, decode_head: ConfigType) -> None:
         """Initialize ``decode_head``"""

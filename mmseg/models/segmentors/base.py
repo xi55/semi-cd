@@ -44,12 +44,15 @@ class BaseSegmentor(BaseModel, metaclass=ABCMeta):
     @property
     def with_decode_head(self) -> bool:
         """bool: whether the segmentor has decode head"""
-        return hasattr(self, 'decode_head') and self.decode_head is not None
+        return hasattr(self, 'decode_student') and self.decode_student is not None and self.decode_teacher is not None
 
     @property
-    def with_cd_decode_head(self) -> bool:
+    def with_semi_decode_head(self) -> bool:
         """bool: whether the segmentor has decode head"""
-        return hasattr(self, 'cd_decode_head') and self.decode_student is not None
+        print(hasattr(self, 'decode_head'))
+        print(self.decode_student is not None)
+        print(self.decode_teacher is not None)
+        return hasattr(self, 'decode_head') and self.decode_student is not None and self.decode_teacher is not None
 
     @abstractmethod
     def extract_feat(self, inputs: Tensor) -> bool:
