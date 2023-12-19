@@ -43,8 +43,8 @@ class SemiImgLoadImageFromFile(MMCV_LoadImageFromFile):
         """
         filenames_l = results['img_path_l']
         filenames_u = results['img_path_u']
-        imgs_l = []
-        imgs_u = []
+        imgs_l = None
+        imgs_u = None
         try:
             for filename_l, filename_u in zip(filenames_l, filenames_u):
                 if self.file_client_args is not None:
@@ -67,8 +67,8 @@ class SemiImgLoadImageFromFile(MMCV_LoadImageFromFile):
                 if self.to_float32:
                     img_l = img_l.astype(np.float32)
                     img_u = img_u.astype(np.float32)
-                imgs_l.append(img_l)
-                imgs_u.append(img_u)
+                imgs_l = img_l
+                imgs_u = img_u
 
             if 'img_seg' in results.keys():
                 if self.file_client_args is not None:

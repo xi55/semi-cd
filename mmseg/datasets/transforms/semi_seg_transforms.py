@@ -321,8 +321,8 @@ class SemiImgRandomCrop(BaseTransform):
         """
         crop_bbox = self.crop_bbox(results)
         # crop the image
-        imgs_l = [self.crop(img_l, crop_bbox) for img_l in results['imgs_l']]
-        imgs_u = [self.crop(img_u, crop_bbox) for img_u in results['imgs_u']]
+        imgs_l = self.crop(results['imgs_l'], crop_bbox)
+        imgs_u = self.crop(results['imgs_u'], crop_bbox)
         # results['img_seg'] = self.crop(results['img_seg'], crop_bbox)
         # crop semantic seg
         for key in results.get('seg_fields', []):
@@ -406,21 +406,19 @@ class SemiImgRandomRotate(BaseTransform):
         # print(results['img_seg'].shape)
         rotate, degree = self.generate_degree()
         if rotate:
-            results['imgs_l'] = [
-                mmcv.imrotate(
-                    img_l,
+            results['imgs_l'] = mmcv.imrotate(
+                    results['imgs_l'],
                     angle=degree,
                     border_value=self.pal_val,
                     center=self.center,
-                    auto_bound=self.auto_bound) for img_l in results['imgs_l']]
+                    auto_bound=self.auto_bound)
             
-            results['imgs_u_s'] = [
-                mmcv.imrotate(
-                    img_u,
+            results['imgs_u_s'] = mmcv.imrotate(
+                    results['imgs_u'],
                     angle=degree,
                     border_value=self.pal_val,
                     center=self.center,
-                    auto_bound=self.auto_bound) for img_u in results['imgs_u']]
+                    auto_bound=self.auto_bound)
             # print(np.unique(results['imgs_u_s']))
 
             # rotate segs
@@ -725,14 +723,11 @@ class SemiImgPhotoMetricDistortion(BaseTransform):
             if self.consistent_contrast_mode else None
         # results['img'] = [_photo_metric_distortion(img, contrast_mode) \
         #                   for img in results['img']]
-        results['imgs_l'] = [_photo_metric_distortion(img_l, contrast_mode) \
-                          for img_l in results['imgs_l']]
+        results['imgs_l'] = _photo_metric_distortion(results['imgs_l'], contrast_mode)
         if results['imgs_u_s'] is not None:
-            results['imgs_u_s'] = [_photo_metric_distortion(img_u, contrast_mode) \
-                            for img_u in results['imgs_u_s']]
+            results['imgs_u_s'] = _photo_metric_distortion(results['imgs_u_s'], contrast_mode)
         else:
-            results['imgs_u_s'] = [_photo_metric_distortion(img_u, contrast_mode) \
-                            for img_u in results['imgs_u']]
+            results['imgs_u_s'] = _photo_metric_distortion(results['imgs_u'], contrast_mode)
 
         return results
 
@@ -1601,15 +1596,9 @@ class SemiImgRandomFlip(BaseTransform):
             results['flip_direction'] = cur_dir
 
             # weak_change image
-            results['imgs_l'] = [
-                mmcv.imflip(img_l, direction=results['flip_direction'])
-                for img_l in results['imgs_l']
-            ]
+            results['imgs_l'] = mmcv.imflip(results['imgs_l'], direction=results['flip_direction'])
             # strong change image
-            results['imgs_u'] = [
-                mmcv.imflip(img_u, direction=results['flip_direction'])
-                for img_u in results['imgs_u']
-            ]
+            results['imgs_u'] = mmcv.imflip(results['imgs_u'], direction=results['flip_direction'])
             # flip segs
             for key in results.get('seg_fields', []):
                 # use copy() to make numpy stride positive

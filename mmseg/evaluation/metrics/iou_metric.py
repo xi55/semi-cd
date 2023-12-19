@@ -76,7 +76,7 @@ class IoUMetric(BaseMetric):
         """
         num_classes = len(self.dataset_meta['classes'])
         for data_sample in data_samples:
-            pred_label = data_sample['pred_sem_seg']['data'].squeeze()
+            pred_label = data_sample['l_seg_pred']['data'].squeeze()
             # print(data_sample.keys())
             # print(torch.unique(data_sample['pred_sem_seg']['data']))
             # print(torch.unique(data_sample['gt_sem_seg']['data']))
