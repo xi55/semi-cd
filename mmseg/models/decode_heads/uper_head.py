@@ -248,7 +248,7 @@ class UPerHead(BaseDecodeHead):
 
         seg_logits = resize(
             input=seg_logits,
-            size=batch_img_metas[0].img_shape,
+            size=(512, 512),
             mode='bilinear',
             align_corners=self.align_corners)
         return seg_logits

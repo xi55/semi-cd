@@ -167,10 +167,10 @@ class SegSemiEncoderDecoder(SllSemiEncoderDecoder):
         
         loss_decode = self.decode_student.loss(feat_l, data_samples,
                                             self.train_cfg)
-        loss_stu = self.decode_teacher.loss_stu(feat_fp,
-                                                feat_s,
-                                                pseudo_label, mask)
-        loss_decode.update(loss_stu)
+        # loss_stu = self.decode_teacher.loss_stu(feat_fp,
+        #                                         feat_s,
+        #                                         pseudo_label, mask)
+        # loss_decode.update(loss_stu)
 
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
@@ -196,7 +196,6 @@ class SegSemiEncoderDecoder(SllSemiEncoderDecoder):
         """
         w_logits_seg, fp_logits_seg, s_logits_seg, l_logits_seg = seg_logits
         batch_size, C, H, W = l_logits_seg.shape
-        # print(l_logits_seg.shape)
         if data_samples is None:
             data_samples = [SegDataSample() for _ in range(batch_size)]
             only_prediction = True
@@ -274,17 +273,10 @@ class SegSemiEncoderDecoder(SllSemiEncoderDecoder):
     @torch.no_grad()
     def get_pseudo(self, inputs, data_samples: SampleList):
         w_logits_seg = self.decode_teacher.predict(inputs, data_samples, self.test_cfg)
-        # print(w_logits_cd.shape)
-        # pseudo_label_cd = w_logits_cd.sigmoid()
-        # pseudo_label = (pseudo_label_cd > 0.5).to(pseudo_label_cd)
 
         pseudo_label_seg = torch.softmax(w_logits_seg.detach(), dim=1)
         pseudo_mask, pseudo_label = torch.max(pseudo_label_seg, dim=1)
         mask = pseudo_mask.ge(0.95).float()
-        # print(torch.unique(pseudo_label_cd))
-        # print(torch.unique(pseudo_label))
-        # print(torch.unique(pseudo_mask))
-        # print(torch.unique(mask))
         return pseudo_label, mask
     
 
