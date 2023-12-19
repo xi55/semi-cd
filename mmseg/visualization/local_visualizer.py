@@ -265,7 +265,7 @@ class SegLocalVisualizer(Visualizer):
             # TODO: Supported in mmengine's Viusalizer.
             out_file: Optional[str] = None,
             step: int = 0,
-            withLabels: Optional[bool] = True) -> None:
+            withLabels: Optional[bool] = False) -> None:
         """Draw datasample and save to all backends.
 
         - If GT and prediction are plotted at the same time, they are
@@ -316,14 +316,14 @@ class SegLocalVisualizer(Visualizer):
 
         if draw_pred and data_sample is not None:
 
-            if 'pred_sem_seg' in data_sample:
+            if 'l_seg_pred' in data_sample:
 
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing semantic ' \
                                             'segmentation results.'
                 pred_img_data = self._draw_sem_seg(image,
-                                                   data_sample.pred_sem_seg,
+                                                   data_sample.l_seg_pred,
                                                    classes, palette,
                                                    withLabels)
 

@@ -72,9 +72,8 @@ class PackSemiInputs(BaseTransform):
                     img = img.transpose(2, 0, 1)
                     img = to_tensor(img).contiguous()
                 return img
-            
-            imgs_l = [_transform_img(img_l) for img_l in results['imgs_l']]
-            imgs_l = torch.cat(imgs_l, axis=0) # -> (6, H, W)
+            img = results['imgs_l']
+            imgs_l = _transform_img(img)
             packed_results['inputs_l'] = imgs_l
 
         if 'imgs_u' in results:
@@ -88,8 +87,8 @@ class PackSemiInputs(BaseTransform):
                     img = to_tensor(img).contiguous()
                 return img
             
-            imgs_u = [_transform_img(img_u) for img_u in results['imgs_u']]
-            imgs_u = torch.cat(imgs_u, axis=0) # -> (6, H, W)
+            img = results['imgs_u']
+            imgs_u = _transform_img(img)
             packed_results['inputs_u'] = imgs_u
         
         if 'imgs_u_s' in results:
@@ -104,8 +103,8 @@ class PackSemiInputs(BaseTransform):
                         img = to_tensor(img).contiguous()
                     return img
                 
-                imgs_u_s = [_transform_img(img_u_s) for img_u_s in results['imgs_u_s']]
-                imgs_u_s = torch.cat(imgs_u_s, axis=0) # -> (6, H, W)
+                img = results['imgs_u_s']
+                imgs_u_s = _transform_img(img)
                 packed_results['inputs_u_s'] = imgs_u_s
             else:
                 packed_results['inputs_u_s'] = None

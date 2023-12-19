@@ -83,15 +83,15 @@ class SegVisualizationHook(Hook):
 
         if self.every_n_inner_iters(batch_idx, self.interval):
             for output in outputs:
-                img_path = output.img_path
-                img_bytes = fileio.get(
-                    img_path, backend_args=self.backend_args)
-                img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
-                window_name = f'{mode}_{osp.basename(img_path)}'
+                img_path_l = output.img_path_l[0]
+                img_l_bytes = fileio.get(
+                    img_path_l, backend_args=self.backend_args)
+                img_l = mmcv.imfrombytes(img_l_bytes, channel_order='rgb')
+                window_name = f'{mode}_{osp.basename(img_path_l)}'
 
                 self._visualizer.add_datasample(
                     window_name,
-                    img,
+                    img_l,
                     data_sample=output,
                     show=self.show,
                     wait_time=self.wait_time,
