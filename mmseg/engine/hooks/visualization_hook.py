@@ -10,7 +10,7 @@ from mmengine.runner import Runner
 import numpy as np
 from mmseg.registry import HOOKS
 from mmseg.structures import SegDataSample
-from mmseg.visualization import SegLocalVisualizer, CDLocalVisualizer
+from mmseg.visualization import SegLocalVisualizer, SemiLocalVisualizer
 
 
 @HOOKS.register_module()
@@ -100,7 +100,7 @@ class SegVisualizationHook(Hook):
 
 
 @HOOKS.register_module()
-class CDVisualizationHook(SegVisualizationHook):
+class SemiVisualizationHook(SegVisualizationHook):
     """Change Detection Visualization Hook. Used to visualize validation and
     testing process prediction results. 
 
@@ -125,8 +125,8 @@ class CDVisualizationHook(SegVisualizationHook):
         if self.draw_on_from_to_img:
             warnings.warn('`draw_on_from_to_img` works only in '
                           'semantic change detection.')
-        self._visualizer: CDLocalVisualizer = \
-            CDLocalVisualizer.get_current_instance()
+        self._visualizer: SemiLocalVisualizer = \
+            SemiLocalVisualizer.get_current_instance()
         self.interval = interval
         self.show = show
         if self.show:
@@ -165,38 +165,31 @@ class CDVisualizationHook(SegVisualizationHook):
         """
         if self.draw is False or mode == 'train':
             return
-        # print(self.backend_args)
         if self.every_n_inner_iters(batch_idx, self.interval):
 
             for output in outputs:
-                img_path = output.img_path[0]
-                img_from_to = []
-                window_name = osp.basename(img_path).split('.')[0]
-                if self.img_shape is not None:
-                    assert len(self.img_shape) == 3, \
-                        '`img_shape` should be (H, W, C)'
-                else:
-                    img_bytes = fileio.get(
-                        img_path, backend_args=self.backend_args)
-                    img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
-                    self.img_shape = img.shape
+                img_path_l = output.img_path_l[0]
+                img_path_u = output.img_path_u[0]
 
-                if self.draw_on_from_to_img:
-                    # for semantic change detection
-                    for _img_path in output.img_path:
-                        _img_bytes = fileio.get(
-                            _img_path, backend_args=self.backend_args)
-                        _img = mmcv.imfrombytes(_img_bytes, channel_order='rgb')
-                        # print(_img.shape)
-                        img_from_to.append(_img)
-                        
+                img_l_bytes = fileio.get(
+                    img_path_l, backend_args=self.backend_args)
+                img_l = mmcv.imfrombytes(img_l_bytes, channel_order='rgb')
+                window_name_l = f'{mode}_{osp.basename(img_path_l)}'
+
+                img_u_bytes = fileio.get(
+                    img_path_u, backend_args=self.backend_args)
+                img_u = mmcv.imfrombytes(img_u_bytes, channel_order='rgb')
+                window_name_u = f'{mode}_{osp.basename(img_path_u)}'
+
+                 
                 img = np.zeros(self.img_shape)
                 self._visualizer.add_datasample(
-                    window_name,
-                    img,
-                    img_from_to,
+                    window_name_l,
+                    window_name_u,
+                    img_l,
+                    img_u,
                     data_sample=output,
                     show=self.show,
                     wait_time=self.wait_time,
                     step=runner.iter,
-                    draw_gt=False)
+                    draw_gt=True)

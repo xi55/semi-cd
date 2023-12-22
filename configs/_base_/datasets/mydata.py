@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'MyDataset'
-data_root = 'E:/changeDectect/train_with_seg/'
+data_root = '/hdd/sdb1/fa/semi/dataset/semi_seg'
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -48,7 +48,7 @@ train_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_path='seg/train/seg_imgs', seg_map_path='seg/train/seg_labels'),
+            img_path='train/seg_l', seg_map_path='train/label'),
         pipeline=train_pipeline))
 val_dataloader = dict(
     batch_size=1,
@@ -59,8 +59,8 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_path='seg/test/seg_imgs',
-            seg_map_path='seg/test/seg_labels'),
+            img_path='test/seg_l',
+            seg_map_path='test/label'),
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 

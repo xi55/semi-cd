@@ -15,7 +15,7 @@ from mmseg.utils import get_classes, get_palette
 
 
 @VISUALIZERS.register_module()
-class SegLocalVisualizer(Visualizer):
+class SemiLocalVisualizer(Visualizer):
     """Local Visualizer.
 
     Args:
@@ -103,7 +103,7 @@ class SegLocalVisualizer(Visualizer):
                       sem_seg: PixelData,
                       classes: Optional[List],
                       palette: Optional[List],
-                      withLabels: Optional[bool] = True) -> np.ndarray:
+                      withLabels: Optional[bool] = False) -> np.ndarray:
         """Draw semantic seg of GT or prediction.
 
         Args:
@@ -255,8 +255,10 @@ class SegLocalVisualizer(Visualizer):
     @master_only
     def add_datasample(
             self,
-            name: str,
-            image: np.ndarray,
+            name_l: str,
+            name_u: str,
+            image_l: np.ndarray,
+            image_u: np.ndarray,
             data_sample: Optional[SegDataSample] = None,
             draw_gt: bool = True,
             draw_pred: bool = True,
@@ -297,53 +299,78 @@ class SegLocalVisualizer(Visualizer):
         classes = self.dataset_meta.get('classes', None)
         palette = self.dataset_meta.get('palette', None)
 
-        gt_img_data = None
-        pred_img_data = None
-
+        gt_img_l_data = None
+        pred_img_l_data = None
+        pred_img_u_data = None
         if draw_gt and data_sample is not None:
             if 'gt_sem_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing semantic ' \
                                             'segmentation results.'
-                gt_img_data = self._draw_sem_seg(image, data_sample.gt_sem_seg,
+                gt_img_l_data = self._draw_sem_seg(image_l, data_sample.gt_sem_seg,
                                                  classes, palette, withLabels)
 
             if 'gt_depth_map' in data_sample:
-                gt_img_data = gt_img_data if gt_img_data is not None else image
+                gt_img_data = gt_img_data if gt_img_data is not None else image_l
                 gt_img_data = self._draw_depth_map(gt_img_data,
                                                    data_sample.gt_depth_map)
 
         if draw_pred and data_sample is not None:
 
-            if 'pred_sem_segs' in data_sample:
+            if 'l_seg_pred' in data_sample:
 
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing semantic ' \
                                             'segmentation results.'
-                pred_img_data = self._draw_sem_seg(image,
-                                                   data_sample.pred_sem_seg,
+                pred_img_l_data = self._draw_sem_seg(image_l,
+                                                   data_sample.l_seg_pred,
                                                    classes, palette,
                                                    withLabels)
-
+                
+            if 'w_seg_pred' in data_sample:
+                assert classes is not None, 'class information is ' \
+                                            'not provided when ' \
+                                            'visualizing semantic ' \
+                                            'segmentation results.'
+                pred_img_u_data = self._draw_sem_seg(image_u,
+                                                   data_sample.w_seg_pred,
+                                                   classes, palette,
+                                                   withLabels)
             if 'pred_depth_map' in data_sample:
-                pred_img_data = pred_img_data if pred_img_data is not None \
-                    else image
-                pred_img_data = self._draw_depth_map(
-                    pred_img_data, data_sample.pred_depth_map)
+                pred_img_l_data = pred_img_l_data if pred_img_l_data is not None \
+                    else image_l
+                pred_img_l_data = self._draw_depth_map(
+                    pred_img_l_data, data_sample.pred_depth_map)
 
-        if gt_img_data is not None and pred_img_data is not None:
-            drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
-        elif gt_img_data is not None:
-            drawn_img = gt_img_data
+        if gt_img_l_data is not None and pred_img_l_data is not None:
+            drawn_img_l = np.concatenate((gt_img_l_data, pred_img_l_data), axis=1)
+        elif gt_img_l_data is not None:
+            drawn_img_l = gt_img_l_data
         else:
-            drawn_img = pred_img_data
+            drawn_img_l = pred_img_l_data
 
+        if pred_img_u_data is not None:
+            drawn_img_u = pred_img_u_data
         if show:
-            self.show(drawn_img, win_name=name, wait_time=wait_time)
+            self.show(drawn_img_l, win_name=name_l, wait_time=wait_time)
 
         if out_file is not None:
-            mmcv.imwrite(mmcv.rgb2bgr(drawn_img), out_file)
+            mmcv.imwrite(mmcv.rgb2bgr(drawn_img_l), out_file)
         else:
-            self.add_image(name, drawn_img, step)
+            self.add_image(name_l, name_u, drawn_img_l, drawn_img_u, step)
+
+
+    @master_only
+    def add_image(self, name_l: str, name_u: str, image_l: np.ndarray, image_u: np.ndarray, step: int = 0) -> None:
+        """Record the image.
+
+        Args:
+            name (str): The image identifier.
+            image (np.ndarray, optional): The image to be saved. The format
+                should be RGB. Defaults to None.
+            step (int): Global step value to record. Defaults to 0.
+        """
+        for vis_backend in self._vis_backends.values():
+            vis_backend.add_image(name_l, name_u, image_l, image_u, step)  # type: ignore

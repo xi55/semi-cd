@@ -76,15 +76,7 @@ class SegSemiEncoderDecoder(SllSemiEncoderDecoder):
         # if self.with_neck:
         #     feat_w_from[3] = self.neck_teacher(feat_w_from[3])
         #     feat_w_to[3] = self.neck_teacher(feat_w_to[3])
-            
-        #     feat_fp_from[3] = self.neck_teacher(feat_fp_from[3])
-        #     feat_fp_to[3] = self.neck_teacher(feat_fp_to[3])
 
-        #     feat_s_from[3] = self.neck_teacher(feat_s_from[3])
-        #     feat_s_to[3] = self.neck_teacher(feat_s_to[3])
-
-        #     feat_l_from[3] = self.neck_student(feat_l_from[3])
-        #     feat_l_to[3] = self.neck_student(feat_l_to[3])
 
         # x.append(x_seg)
         return feat_w, feat_fp, feat_s, feat_l

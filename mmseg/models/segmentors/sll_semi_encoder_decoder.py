@@ -102,7 +102,7 @@ class SllSemiEncoderDecoder(BaseSegmentor):
         self.test_cfg = test_cfg
         self.backbone_inchannels = backbone_inchannels # RGB: 3
 
-        assert self.with_decode_head
+        assert self.with_semi_decode_head
 
     def _init_decode_head(self, decode_head: ConfigType) -> None:
         """Initialize ``decode_head``"""
