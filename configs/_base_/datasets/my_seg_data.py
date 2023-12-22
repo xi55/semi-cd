@@ -1,6 +1,6 @@
 
 dataset_type = 'my_seg_Dataset'
-data_root = 'E:/changeDectect/semi_seg'
+data_root = '/hdd/sdb1/fa/semi/dataset/semi_seg'
 
 crop_size = (512, 512)
 
