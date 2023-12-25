@@ -354,10 +354,10 @@ class SemiLocalVisualizer(Visualizer):
         if pred_img_u_data is not None:
             drawn_img_u = pred_img_u_data
         if show:
-            self.show(drawn_img_l, win_name=name_l, wait_time=wait_time)
+            self.show(drawn_img_u, win_name=name_u, wait_time=wait_time)
 
         if out_file is not None:
-            mmcv.imwrite(mmcv.rgb2bgr(drawn_img_l), out_file)
+            mmcv.imwrite(mmcv.rgb2bgr(drawn_img_u), out_file)
         else:
             self.add_image(name_l, name_u, drawn_img_l, drawn_img_u, step)
 

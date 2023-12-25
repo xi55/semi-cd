@@ -17,7 +17,7 @@ from PIL import Image
 
 from mmseg.structures import SegDataSample
 from mmseg.utils import ConfigType, SampleList, get_classes, get_palette
-from mmseg.visualization import SegLocalVisualizer
+from mmseg.visualization import SegLocalVisualizer, SemiLocalVisualizer
 
 InputType = Union[str, np.ndarray]
 InputsType = Union[InputType, Sequence[InputType]]
@@ -83,7 +83,7 @@ class MMSegInferencer(BaseInferencer):
         if device == 'cpu' or not torch.cuda.is_available():
             self.model = revert_sync_batchnorm(self.model)
 
-        assert isinstance(self.visualizer, SegLocalVisualizer)
+        assert isinstance(self.visualizer, SemiLocalVisualizer)
         self.visualizer.set_dataset_meta(classes, palette, dataset_name)
 
     def _load_weights_to_model(self, model: nn.Module,
@@ -228,7 +228,6 @@ class MMSegInferencer(BaseInferencer):
         self.visualizer.alpha = opacity
 
         results = []
-
         for single_input, pred in zip(inputs, preds):
             if isinstance(single_input, str):
                 img_bytes = mmengine.fileio.get(single_input)
@@ -248,6 +247,8 @@ class MMSegInferencer(BaseInferencer):
 
             self.visualizer.add_datasample(
                 img_name,
+                img_name,
+                img,
                 img,
                 pred,
                 show=show,
@@ -307,8 +308,8 @@ class MMSegInferencer(BaseInferencer):
 
         for i, pred in enumerate(preds):
             pred_data = dict()
-            if 'pred_sem_seg' in pred.keys():
-                pred_data['sem_seg'] = pred.pred_sem_seg.numpy().data[0]
+            if 'w_seg_pred' in pred.keys():
+                pred_data['sem_seg'] = pred.w_seg_pred.numpy().data[0]
             elif 'pred_depth_map' in pred.keys():
                 pred_data['depth_map'] = pred.pred_depth_map.numpy().data[0]
 
@@ -326,6 +327,7 @@ class MMSegInferencer(BaseInferencer):
                         output.save(img_path)
                     else:
                         np.save(img_path, data)
+            print(pred_data)
             pred_data = next(iter(pred_data.values()))
             results_dict['predictions'].append(pred_data)
             self.num_pred_imgs += 1
@@ -355,16 +357,16 @@ class MMSegInferencer(BaseInferencer):
         """
         pipeline_cfg = cfg.test_dataloader.dataset.pipeline
         # Loading annotations is also not applicable
-        for transform in ('LoadAnnotations', 'LoadDepthAnnotation'):
+        for transform in ('SemiImgLoadAnnotations', 'LoadDepthAnnotation'):
             idx = self._get_transform_idx(pipeline_cfg, transform)
             if idx != -1:
                 del pipeline_cfg[idx]
 
         load_img_idx = self._get_transform_idx(pipeline_cfg,
-                                               'LoadImageFromFile')
+                                               'SemiImgLoadImageFromFile')
         if load_img_idx == -1:
             raise ValueError(
-                'LoadImageFromFile is not found in the test pipeline')
+                'SemiImgLoadImageFromFile is not found in the test pipeline')
         pipeline_cfg[load_img_idx]['type'] = 'InferencerLoader'
         return Compose(pipeline_cfg)
 

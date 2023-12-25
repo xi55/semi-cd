@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'MyDataset'
-data_root = '/hdd/sdb1/fa/semi/dataset/semi_seg'
+data_root = 'E:/changeDectect/semi_seg'
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),

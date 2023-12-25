@@ -473,7 +473,7 @@ class InferencerLoader(BaseTransform):
     def __init__(self, **kwargs) -> None:
         super().__init__()
         self.from_file = TRANSFORMS.build(
-            dict(type='LoadImageFromFile', **kwargs))
+            dict(type='SemiImgLoadImageFromFile', **kwargs))
         self.from_ndarray = TRANSFORMS.build(
             dict(type='LoadImageFromNDArray', **kwargs))
 
@@ -488,7 +488,7 @@ class InferencerLoader(BaseTransform):
             dict: The dict contains loaded image and meta information.
         """
         if isinstance(single_input, str):
-            inputs = dict(img_path=single_input)
+            inputs = dict(img_path_l=[single_input], img_path_u=[single_input])
         elif isinstance(single_input, np.ndarray):
             inputs = dict(img=single_input)
         elif isinstance(single_input, dict):
