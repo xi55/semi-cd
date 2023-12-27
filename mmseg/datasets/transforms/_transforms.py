@@ -1145,34 +1145,43 @@ class MultiImgResize(BaseTransform):
     def _resize_img(self, results: dict) -> None:
         """Resize images with ``results['scale']``."""
 
-        if results.get('img', None) is not None:
-            res_imgs = []
-            for img in results['img']:
-                if self.keep_ratio:
-                    img, scale_factor = mmcv.imrescale(
-                        img,
-                        results['scale'],
-                        interpolation=self.interpolation,
-                        return_scale=True,
-                        backend=self.backend)
-                    # the w_scale and h_scale has minor difference
-                    # a real fix should be done in the mmcv.imrescale in the future
-                    new_h, new_w = img.shape[:2]
-                    h, w = img.shape[:2]
-                    w_scale = new_w / w
-                    h_scale = new_h / h
-                else:
-                    img, w_scale, h_scale = mmcv.imresize(
-                        img,
-                        results['scale'],
-                        interpolation=self.interpolation,
-                        return_scale=True,
-                        backend=self.backend)
-                res_imgs.append(img)
-            results['img'] = res_imgs
-            results['img_shape'] = res_imgs[0].shape[:2]
-            results['scale_factor'] = (w_scale, h_scale)
+        if results.get('imgs_l', None) is not None and results.get('imgs_u', None) is not None:
+            res_imgs_l, w_scale_l, h_scale_l = self._resize(results, 'imgs_l')
+            res_imgs_u, _, _ = self._resize(results, 'imgs_u')
+            if results.get('imgs_u_s', None) is not None:
+                res_imgs_u_s, _, _ = self._resize(results, 'imgs_u_s')
+                results['imgs_u_s'] = res_imgs_u_s
+            else:
+                results['imgs_u_s'] = res_imgs_u
+            results['imgs_l'] = res_imgs_l
+            results['imgs_u'] = res_imgs_u
+            results['img_shape'] = res_imgs_l[0].shape[:2]
+            results['scale_factor'] = (w_scale_l, h_scale_l)
             results['keep_ratio'] = self.keep_ratio
+
+    def _resize(self, results, key):
+        img = results[key]
+        if self.keep_ratio:
+            img, scale_factor = mmcv.imrescale(
+                    img,
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+                # the w_scale and h_scale has minor difference
+                # a real fix should be done in the mmcv.imrescale in the future
+            new_h, new_w = img.shape[:2]
+            h, w = img.shape[:2]
+            w_scale = new_w / w
+            h_scale = new_h / h
+        else:
+            img, w_scale, h_scale = mmcv.imresize(
+                    img,
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+        return img, w_scale, h_scale
 
     def _resize_seg(self, results: dict) -> None:
         """Resize semantic segmentation map with ``results['scale']``."""
@@ -1205,7 +1214,7 @@ class MultiImgResize(BaseTransform):
         if self.scale:
             results['scale'] = self.scale
         else:
-            img_shape = results['img'][0].shape[:2]
+            img_shape = results['imgs_l'][0].shape[:2]
             results['scale'] = _scale_size(img_shape[::-1],
                                            self.scale_factor)  # type: ignore
         self._resize_img(results)

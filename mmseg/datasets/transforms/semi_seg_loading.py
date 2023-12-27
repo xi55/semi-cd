@@ -439,17 +439,20 @@ class SemiImgLoadLoadImageFromNDArray(SemiImgLoadImageFromFile):
         Returns:
             dict: The dict contains loaded image and meta information.
         """
-
-        imgs = []
+        imgs_l = []
+        imgs_u = []
         if self.to_float32:
-            for img in results['img']:
-                img = img.astype(np.float32)
-                imgs.append(img)
+            for img_l, img_u in zip(results['img_l'], results['img_u']):
+                img_l = img_l.astype(np.float32)
+                img_u = img_u.astype(np.float32)
+                imgs_l.append(img_l)
+                imgs_u.append(img_u)
 
         results['img_path'] = None
-        results['img'] = imgs
-        results['img_shape'] = imgs[0].shape[:2]
-        results['ori_shape'] = imgs[0].shape[:2]
+        results['img_l'] = imgs_l
+        results['img_u'] = imgs_u
+        results['img_shape'] = imgs_l[0].shape[:2]
+        results['ori_shape'] = imgs_l[0].shape[:2]
         return results
 
 

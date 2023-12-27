@@ -327,7 +327,6 @@ class MMSegInferencer(BaseInferencer):
                         output.save(img_path)
                     else:
                         np.save(img_path, data)
-            print(pred_data)
             pred_data = next(iter(pred_data.values()))
             results_dict['predictions'].append(pred_data)
             self.num_pred_imgs += 1

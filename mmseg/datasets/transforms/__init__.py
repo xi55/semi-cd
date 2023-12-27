@@ -28,9 +28,9 @@ from ._transforms import (MultiImgAdjustGamma, MultiImgAlbu, MultiImgCLAHE,
                          MultiImgResizeToMultiple, MultiImgRGB2Gray)
 
 
-from .semi_seg_loading import (SemiImgLoadImageFromFile, SemiImgLoadAnnotations)
+from .semi_seg_loading import (SemiImgLoadImageFromFile, SemiImgLoadAnnotations, SemiImgLoadLoadImageFromNDArray)
 from .semi_seg_transforms import (SemiImgRandomCrop, SemiImgRandomFlip, SemiImgRandomRotate,
-                                  SemiImgPhotoMetricDistortion)
+                                  SemiImgPhotoMetricDistortion, SemiImgRandomResize)
 from .semi_seg_formatting import (PackSemiInputs)
 
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
@@ -63,5 +63,6 @@ __all__ = [
     'MultiImgNormalize', 'MultiImgPad', 'MultiImgRandomCutOut', 'MultiImgRandomResize', 'MultiImgRandomRotFlip', 
     'MultiImgRerange', 'MultiImgResize', 'MultiImgResizeToMultiple', 'MultiImgRGB2Gray', 'MultiImgLoadInferencerLoader',
     'MultiImgLoadLoadImageFromNDArray', 'SemiImgLoadImageFromFile', 'SemiImgLoadAnnotations', 'SemiImgRandomCrop',
-    'SemiImgRandomFlip', 'SemiImgRandomRotate', 'SemiImgPhotoMetricDistortion'
+    'SemiImgRandomFlip', 'SemiImgRandomRotate', 'SemiImgPhotoMetricDistortion', 'SemiImgLoadLoadImageFromNDArray',
+    'SemiImgRandomResize'
 ]

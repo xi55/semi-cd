@@ -33,6 +33,12 @@ train_pipeline = [
     dict(type='SemiImgRandomRotate', prob=0.5, degree=180),
     dict(type='SemiImgPhotoMetricDistortion'),
     dict(
+        type='SemiImgRandomResize',
+        scale=(512, 512),
+        ratio_range=(0.75, 1.25),
+        keep_ratio=True
+    ),
+    dict(
         type='RandomOrder',
         transforms=[
             dict(type='RandAugment', aug_space=color_space, aug_num=1),
