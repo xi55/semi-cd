@@ -1,6 +1,6 @@
 
 dataset_type = 'LEVIRCDDataset'
-data_root = '/root/autodl-tmp/W_to_L_10'
+data_root = '/root/autodl-tmp/W_to_L_20'
 
 crop_size = (512, 512)
 

@@ -1163,9 +1163,9 @@ class MultiImgResize(BaseTransform):
     def _resize_img(self, results: dict) -> None:
         """Resize images with ``results['scale']``."""
 
-        if results.get('img', None) is not None:
+        if results.get('imgs_l', None) is not None:
             res_imgs = []
-            for img in results['img']:
+            for img in results['imgs_l']:
                 if self.keep_ratio:
                     img, scale_factor = mmcv.imrescale(
                         img,
@@ -1203,7 +1203,7 @@ class MultiImgResize(BaseTransform):
                         interpolation=self.interpolation,
                         return_scale=True,
                         backend=self.backend)
-            results['img'] = res_imgs
+            results['imgs_l'] = res_imgs
             results['img_seg'] = img_seg
             results['img_shape'] = res_imgs[0].shape[:2]
             results['scale_factor'] = (w_scale, h_scale)

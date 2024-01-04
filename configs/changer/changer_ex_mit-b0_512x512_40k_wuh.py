@@ -1,5 +1,5 @@
 _base_ = [
-        '../_base_/models/changer_mit-b0.py', '../_base_/datasets/levir_cd_semi.py',
+        '../_base_/models/changer_mit-b0.py', '../_base_/datasets/semi_wuh_10.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py']
 
 crop_size = (512, 512)

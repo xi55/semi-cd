@@ -490,4 +490,4 @@ class Invert(ColorTransform):
     def _transform_img(self, results: dict, mag: float) -> None:
         """Invert the image."""
         img = results['imgs_u_s']
-        results['imgs_u_ss'] = [mmcv.iminvert(im).astype(im.dtype) for im in img]
+        results['imgs_u_s'] = [mmcv.iminvert(im).astype(im.dtype) for im in img]
