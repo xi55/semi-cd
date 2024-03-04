@@ -33,3 +33,8 @@ python tools/test.py configs\changer\changer_semi_mit-b0_512x512_40k_levircd.py 
 
 部署
 参考mmdeploy
+
+# 结果
+![Aaron Swartz](./demo/变化检测iou.png)
+
+![Aaron Swartz](./demo/变化检测可视化.png)
